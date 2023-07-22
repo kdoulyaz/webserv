@@ -1,4 +1,4 @@
-SRC = src/main.cpp src/configue.cpp
+SRC = src/main.cpp src/configue.cpp src/server.cpp
 
 CFLAGS =  -fsanitize=address -g #-std=c++98
 CPP = c++

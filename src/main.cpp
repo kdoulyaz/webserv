@@ -1,4 +1,5 @@
 #include "../include/main.hpp"
+#include "../include/server.hpp"
 
 ServerConfig* config;
 
@@ -55,7 +56,20 @@ int main(int argc, char **argv)
     return 1;
   }
   config = new ServerConfig(argv[1]);
-  printConfiguration();
-  // delete config; //at the end
+//   printConfiguration();
+  std::vector<Server *> servers;
+  for(int i = 0; i < config->serverConfigs.size(); i++)
+  {
+    Server *srv = new Server(config->serverConfigs[i].port, config->serverConfigs[i].host);
+    srv->create_server();
+    servers.push_back(srv);
+  }
+  
+  for(int i = 0; i < servers.size(); i++)
+  {
+    servers[i]->clean_up();
+    delete servers[i];
+  }
+  delete config; //at the end
     return 0;
 }
