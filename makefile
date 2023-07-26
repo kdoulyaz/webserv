@@ -1,29 +1,28 @@
-SRC = src/main.cpp src/configue.cpp src/server.cpp
-
-CFLAGS =  -fsanitize=address -g #-std=c++98
+CFLAGS = -Wall -Wextra -Werror -std=c++98 -Iinclude #-fsanitize=address -g
 CPP = c++
 NAME = server
-CLIENT = client
+
+SRCS = src/main.cpp src/configue.cpp src/webserv.cpp src/network.cpp
+OBJS = $(patsubst src/%.cpp,obj/%.o,$(SRCS))
 
 all: $(NAME)
 
-$(NAME): $(SRC)
-	@$(CPP) $(CFLAGS) $(SRC) -o $(NAME) 
+$(NAME): obj_dir $(OBJS)
+	$(CPP) $(CFLAGS) $(OBJS) -o $(NAME) 
+
+obj_dir:
+	mkdir -p obj
+
+$(OBJS) : obj/%.o : src/%.cpp
+	$(CPP) $(CFLAGS) -c $< -o $@
 
 clean:
+	rm -rf obj
 
 fclean : clean
-	@rm -rf $(NAME)
-	@rm -rf $(CLIENT)
+	rm -rf $(NAME)
 
 
 re : fclean all
-
-client: client.cpp
-	@$(CPP) $(CFLAGS) client.cpp -o client
-
-run: 
-	./server config/config_file.conf 
-	
 
 .PHONY: all clean fclean re
