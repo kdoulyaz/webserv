@@ -1,4 +1,4 @@
-#include "../include/configue.hpp"
+#include "configue.hpp"
 
 ServerConfig::ServerConfig()
 {

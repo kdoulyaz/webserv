@@ -1,5 +1,15 @@
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#ifndef HEADER_HPP
+#define HEADER_HPP
+
+#include <string>
+#include <vector>
+#include <map>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -9,7 +19,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
-#include <iostream>
 #include <string.h>
 #include <map>
 #include <vector>
@@ -22,15 +31,19 @@
 #include <fcntl.h>
 #include <cstring>
 
-#include "configue.hpp"
+class ServerConfig;
+class Network;
+class Webserv;
 
-extern ServerConfig *config;
+#include "webserv.hpp"
+#include "configue.hpp"
+#include "network.hpp"
+
+#define SLISTEN true
 
 #define PORT "8011"
-#define SOCKET_LISTEN 1024
+#define BACK_LOG 1024
 #define BUFFER_SIZE 4096
-
-// void print_map(std::map<std::string, std::string> map);
-
+#define CRLF "\r\n"
 
 #endif
