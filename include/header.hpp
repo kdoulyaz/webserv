@@ -9,8 +9,6 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
-#include <string.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -35,6 +33,7 @@ class ServerConfig;
 class Network;
 class Webserv;
 
+
 #include "webserv.hpp"
 #include "configue.hpp"
 #include "network.hpp"
@@ -45,5 +44,8 @@ class Webserv;
 #define BACK_LOG 1024
 #define BUFFER_SIZE 4096
 #define CRLF "\r\n"
+
+void multiplexing(Webserv & webserv);
+void setuping(Webserv & webserv);
 
 #endif
