@@ -31,7 +31,7 @@ void Webserv::add_network(const bool &l, const int &s)
 	FD_SET(s, &fderror);
 }
 
-void Webserv::from_read_to_write(const int &s)
+void Webserv::rtow(const int &s)
 {
 	FD_CLR(s, &fdread);
 	FD_SET(s, &fdwrite);
@@ -44,14 +44,14 @@ void Webserv::delete_network(const int &s)
 	std::vector<Network>::iterator it = nets.begin();
 	while (it != nets.end())
 	{
-		if (it->sock_fd > maxtmp)
+		if (it->sock_fd != s && it->sock_fd > maxtmp)
 			maxtmp = it->sock_fd;
 		if (it->sock_fd == s)
 		{
 			close(s);
 			it = nets.erase(it);
 			FD_CLR(s, &fdread);
-			// FD_CLR(s, &fdwrite);
+			FD_CLR(s, &fdwrite);
 		}
 		else
 			++it;

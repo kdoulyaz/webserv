@@ -15,7 +15,7 @@ class Webserv
 
   Webserv();
   const Network * get_network(const int &s);
-  void from_read_to_write(const int &s);
+  void rtow(const int &s); // convert  from read   to write 
   void add_network(const bool &l, const int &s);
   void delete_network(const int &s);
 };
