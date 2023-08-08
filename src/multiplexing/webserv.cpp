@@ -1,60 +1,71 @@
-#include "header.hpp"
+#include "../../include/webserv.hpp"
 
-Webserv::Webserv()
-: maxfd()
+Webserv::Webserv(){}
+
+Webserv::Webserv(std::string &port, std::string &host)
 {
-	FD_ZERO(&fdread);
-	FD_ZERO(&fdwrite);
-	FD_ZERO(&fderror);
+	std::cout << "Server was Created" << std::endl;
+
+  bzero(&hints, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
+  this->port = port;
+  this->host = host;
+
+  FD_ZERO(&net_fd);
 }
 
-const Network * Webserv::get_network(const int &s)
+Network * Webserv::get_network(int f)
 {
-	std::vector<Network>::iterator it = nets.begin();
-	while (it != nets.end())
+	std::vector<Network *>::iterator s = nets.begin();
+	while (s < nets.end())
 	{
-		if (it->sock_fd == s)
+		if ((*s)->get_socket_fd() == f)
 		{
-			return it.base();
+			return (*s);
 		}
-		++it;
+		s++;
 	}
 	return NULL;
 }
 
-void Webserv::add_network(const bool &l, const int &s)
+void Webserv::add_network()
 {
-    nets.push_back(Network(l, s));
-	if (s >= maxfd)
-		maxfd = s + 1;
-	FD_SET(s, &fdread);
-	FD_SET(s, &fderror);
+  Network *net = new Network();
+  struct sockaddr_storage add;
+  socklen_t addr_len = sizeof(add);
+  int net_sock = accept(sock_fd, (struct sockaddr *)&add, &addr_len);
+  fcntl(net_sock, F_SETFL, O_NONBLOCK);
+  if (net_sock < 0)
+  {
+    std::cerr << "accept: " << strerror(errno) << std::endl;
+    exit(1);
+  }
+  FD_SET(net_sock, &net_fd);
+  if (net_sock > maxfd_sock)
+    maxfd_sock = net_sock;
+  net->set_socket_fd(net_sock);
+  net->set_address(add);
+  nets.push_back(net);
 }
 
-void Webserv::from_read_to_write(const int &s)
+void Webserv::delete_network(Network *net)
 {
-	FD_CLR(s, &fdread);
-	FD_SET(s, &fdwrite);
-}
 
-
-void Webserv::delete_network(const int &s)
-{
-	int maxtmp = 0;
-	std::vector<Network>::iterator it = nets.begin();
-	while (it != nets.end())
-	{
-		if (it->sock_fd > maxtmp)
-			maxtmp = it->sock_fd;
-		if (it->sock_fd == s)
-		{
-			close(s);
-			it = nets.erase(it);
-			FD_CLR(s, &fdread);
-			// FD_CLR(s, &fdwrite);
-		}
-		else
-			++it;
-	}
-	maxfd = maxtmp + 1;
+  if ((net && net->is_done) == true)
+  {
+    std::cout << "Client disconnected." << std::endl;
+    for (size_t i = 0; i < nets.size(); i++)
+    {
+      if (net->get_socket_fd() == nets[i]->get_socket_fd())
+      {
+        FD_CLR(net->get_socket_fd(), &net_fd);
+        close(net->get_socket_fd());
+        nets.erase(nets.begin() + i);
+        delete net;
+        break;
+      }
+    }
+  }
 }

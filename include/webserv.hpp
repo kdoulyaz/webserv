@@ -1,23 +1,36 @@
-#ifndef webserv_hpp
-#define webserv_hpp
+#ifndef WEBSERV_HPP
+#define WEBSERV_HPP
 
 #include "header.hpp"
 
+class Network;
+class Request;
+
 class Webserv
 {
-  public:
-  ServerConfig *config;
-  std::vector<Network> nets;
-  int maxfd;
-  fd_set fdread;
-  fd_set fdwrite;
-  fd_set fderror;
+  private:
+    int sock_fd;
+  	struct addrinfo hints;
+	  struct addrinfo *records;
+    std::vector<Network *> nets;
+    int maxfd_sock;
+    fd_set net_fd;
+    fd_set fdread;
+    fd_set fdwrite;
+    fd_set fderror;
+    std::string port;
+    std::string host;
 
-  Webserv();
-  const Network * get_network(const int &s);
-  void from_read_to_write(const int &s);
-  void add_network(const bool &l, const int &s);
-  void delete_network(const int &s);
+  public:
+
+    Webserv();
+    Webserv(std::string &port, std::string &host);
+    void  setuping();
+    Network *get_network(int s);
+    void  add_network();
+    void  delete_network(Network *net);
+    void  multiplexing(Network *net, struct timeval &t);
+    void  init_fdbit();
 };
 
 #endif

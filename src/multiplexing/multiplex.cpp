@@ -1,110 +1,81 @@
-#include "header.hpp"
+#include "../../include/webserv.hpp"
 
-void setuping(Webserv &webserv)
+
+void Webserv::setuping()
 {
-	struct addrinfo hints;
-	struct addrinfo *records;
-	for (size_t i = 0; i < webserv.config->serverConfigs.size(); i++)
+	int	ret;
+	const int enb = WA7ED;
+
+	std::cout << "Getting address info..." << std::endl;
+	if ((ret = getaddrinfo(host.c_str(), port.c_str(), &hints, &records))){
+		std::cerr << gai_strerror(ret) << std::endl;
+		exit(1);
+	}
+	std::cout << "Creating Socket..." << std::endl;
+	sock_fd = socket(records->ai_family, records->ai_socktype, records->ai_protocol);
+	fcntl(sock_fd, F_SETFL, O_NONBLOCK);
+	maxfd_sock = sock_fd;
+	if (sock_fd == -1){
+		std::cerr << "socket: " << strerror(errno) << std::endl;
+		exit(1);
+	}
+	if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &enb, sizeof(int)) < 0){
+		std::cerr << "setsockopt: " << strerror(errno) << std::endl;
+		exit(1);
+	}
+
+	std::cout << "Binding socket to local address..." << std::endl;
+	bind(sock_fd, records->ai_addr, records->ai_addrlen);
+	freeaddrinfo(records);
+
+	std::cout << "listening..." << std::endl;
+	listen(sock_fd, BACK_LOG);
+  	FD_SET(sock_fd, &net_fd);
+}
+
+void Webserv::init_fdbit()
+{
+  FD_ZERO(&this->fdread);
+  FD_SET(this->sock_fd, &this->fdread);
+  FD_ZERO(&this->fdwrite);
+  FD_SET(this->sock_fd, &this->fdwrite);
+	for (size_t i = 0; i < this->nets.size(); i++)
 	{
-		std::cout << "Server Block number " << i + 1 << std::endl;
-		const std::string &host = webserv.config->serverConfigs[i].host;
-		const std::string &port = webserv.config->serverConfigs[i].port;
-		int sock_fd;
-
-		std::cout << "Getting address info..." << std::endl;
-		bzero(&hints, sizeof(hints));
-		hints.ai_family = AF_INET;
-		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_flags = AI_PASSIVE;
-		getaddrinfo(host.c_str(), port.c_str(), &hints, &records);
-
-		std::cout << "Creating Socket..." << std::endl;
-		sock_fd = socket(records->ai_family, records->ai_socktype, records->ai_protocol);
-		fcntl(sock_fd, F_SETFL, O_NONBLOCK);
-
-		std::cout << "Binding socket to local address..." << std::endl;
-		bind(sock_fd, records->ai_addr, records->ai_addrlen);
-		freeaddrinfo(records);
-
-		std::cout << "listening..." << std::endl;
-		listen(sock_fd, BACK_LOG);
-
-		std::cout << "Adding the Socket..." << std::endl;
-		webserv.add_network(SLISTEN, sock_fd);
+		FD_SET(this->nets[i]->get_socket_fd(), &this->fdread);
+    	FD_SET(this->nets[i]->get_socket_fd(), &this->fdwrite);
 	}
 }
 
-void init_fdbit(Webserv &webserv, fd_set &fdread_copy, fd_set &fdwrite_copy, fd_set &fderror_copy)
+void Webserv::multiplexing(Network *net, struct timeval &t)
 {
-	FD_ZERO(&fdread_copy);
-	FD_ZERO(&fdwrite_copy);
-	FD_ZERO(&fderror_copy);
-	FD_COPY(&webserv.fdread, &fdread_copy);
-	FD_COPY(&webserv.fdwrite, &fdwrite_copy);
-	FD_COPY(&webserv.fderror, &fderror_copy);
-}
+// Response respons;
+	init_fdbit();
+	if (select(maxfd_sock + WA7ED, &fdread, &fdwrite, &fderror, &t) < ZERO){
+		std::cerr << "select: " << strerror(errno) << std::endl;
+		exit(1);
+	}
+	for (int fd_sock = 3; fd_sock < maxfd_sock + WA7ED; fd_sock++){
 
-void multiplexing(Webserv &webserv)
-{
-	struct timeval t;
-	fd_set fdread_copy;
-	fd_set fdwrite_copy;
-	fd_set fderror_copy;
-	std::vector<char> buff(2048);
+		if (fd_sock != sock_fd and !(net = get_network(fd_sock)))
+			continue;
 
-	// int bytes = 0;
-
-	t.tv_sec = 1;
-	t.tv_usec = 10000;
-	while (true)
-	{
-		init_fdbit(webserv, fdread_copy, fdwrite_copy, fderror_copy);
-		select(webserv.maxfd, &fdread_copy, &fdwrite_copy, &fderror_copy, &t);
-		for (int fd_sock = 3; fd_sock < webserv.maxfd; ++fd_sock)
-		{
-			if (FD_ISSET(fd_sock, &fdread_copy)) // reading data from clients when FD_ISSET(fd_sock, &fdread_copy) is true
-			{
-				if (webserv.get_network(fd_sock)->isListen == SLISTEN)
-				{
-					int client_sock = accept(fd_sock, NULL, NULL);
-					std::cout << "Say Welcome to the new Client" << std::endl;
-					webserv.add_network(!SLISTEN, client_sock);
-				}
+		if (FD_ISSET(fd_sock, &fdread)){ // reading data from clients when FD_ISSET(fd_sock, &fdread_copy) is true
+			if (fd_sock == sock_fd)
+				add_network();
+			else if (net and !net->is_read){
+				std::cout << "Receiving..." << std::endl;
+				char buff[BUFFER_SIZE];
+				int bytes = recv(net->get_socket_fd(), buff, sizeof(buff), 0);
+				if (bytes < WA7ED)
+					net->is_read = true;
 				else
-				{
-					std::cout << "Receiving..." << std::endl;
-					int bytes = recv(webserv.get_network(fd_sock)->sock_fd, buff.data(), buff.size(), 0);
-					if (bytes > 0)
-					{
-						// Parseing
-						for (int i = 0; i < bytes; i++)
-						{
-							std::cout << buff[i];
-						}
-						std::cout << std::endl;
-					}
-					else if (bytes == 0)
-					{
-						// Client disconnected
-						std::cout << "Client disconnected." << std::endl;
-						webserv.delete_network(fd_sock);
-					}
-					else
-					{
-						// Handle recv error
-						std::cerr << "Error receiving data from client." << std::endl;
-					}
-				}
+					net->handle_req(buff, bytes);
 			}
-			else if (FD_ISSET(fd_sock, &fdwrite_copy)) // sending data to clients when FD_ISSET(fd_sock, &fdwrite_copy) is true
-			{
-				std::cout << "Sending..." << std::endl;
+			else if (FD_ISSET(fd_sock, &fdwrite)){
+				//respons:  respons.handle_response(net);
 			}
-			else if (FD_ISSET(fd_sock, &fderror_copy))
-			{
-				std::cout << "Deleting..." << std::endl;
-				webserv.delete_network(fd_sock);
-			}
+			// Client disconnected
+			// delete_network(net);
 		}
-	}
+	}	
 }
