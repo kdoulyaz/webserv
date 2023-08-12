@@ -105,6 +105,7 @@ void multiplexing(Webserv &webserv)
 							std::cout << buff[i];
 						}
 						std::cout << std::endl;
+						
 					}
 					else if (bytes == 0)
 					{
