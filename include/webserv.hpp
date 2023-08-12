@@ -1,5 +1,5 @@
-#ifndef webserv_hpp
-#define webserv_hpp
+#ifndef WEBSERV_HPP
+#define WEBSERV_HPP
 
 #include "header.hpp"
 

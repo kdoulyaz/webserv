@@ -33,20 +33,22 @@ void Webserv::add_network(const bool &l, const int &s)
 
 void Webserv::delete_network(const int &s)
 {
-
-  if ((net && net->is_done) == true)
-  {
-    std::cout << "Client disconnected." << std::endl;
-    for (size_t i = 0; i < nets.size(); i++)
+    int maxtmp = 0;
+    std::vector<Network*>::iterator it = nets.begin(); 
+    while (it != nets.end())
     {
-      if (net->get_socket_fd() == nets[i]->get_socket_fd())
-      {
-        FD_CLR(net->get_socket_fd(), &net_fd);
-        close(net->get_socket_fd());
-        nets.erase(nets.begin() + i);
-        delete net;
-        break;
-      }
+        if ((*it)->get_socket_fd() != s && (*it)->get_socket_fd() > maxtmp)
+            maxtmp = (*it)->get_socket_fd();
+        if ((*it)->get_socket_fd() == s)
+        {
+            close(s);
+            delete *it; 
+            it = nets.erase(it);
+            FD_CLR(s, &fdread);
+            FD_CLR(s, &fdwrite);
+        }
+        else
+            ++it;
     }
-  }
+    maxfd_sock = maxtmp;
 }

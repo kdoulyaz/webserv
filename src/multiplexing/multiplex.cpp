@@ -1,8 +1,5 @@
 #include "header.hpp"
 
-void setuping(Webserv &webserv)
-#include "header.hpp"
-
 void Webserv::setuping()
 {
 	struct addrinfo hints;
@@ -138,10 +135,6 @@ void multiplexing(Webserv &webserv)
 				// FD_CLR(fd_sock, &fdread);
 				// FD_CLR(fd_sock, &fdwrite);
 			}
-			else if (FD_ISSET(fd_sock, &fderror_copy))
-			{
-				std::cout << "Deleting..." << std::endl;
-				webserv.delete_network(fd_sock);
 			else
 			{
 				std::cout << "Deleting..." << std::endl;
