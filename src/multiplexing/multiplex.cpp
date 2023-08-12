@@ -1,6 +1,9 @@
 #include "header.hpp"
 
 void setuping(Webserv &webserv)
+#include "header.hpp"
+
+void Webserv::setuping()
 {
 	struct addrinfo hints;
 	struct addrinfo *records;
@@ -70,6 +73,26 @@ void multiplexing(Webserv &webserv)
 					std::cout << "Say Welcome to the new Client" << std::endl;
 					webserv.add_network(!SLISTEN, client_sock);
 				}
+// Response respons;
+	init_fdbit();
+	if (select(maxfd_sock + WA7ED, &fdread, &fdwrite, &fderror, &t) < ZERO){
+		std::cerr << "select: " << strerror(errno) << std::endl;
+		exit(1);
+	}
+	for (int fd_sock = 3; fd_sock < maxfd_sock + WA7ED; fd_sock++){
+
+		if (fd_sock != sock_fd && !(net = get_network(fd_sock)))
+			continue;
+
+		if (FD_ISSET(fd_sock, &fdread)){ // reading data from clients when FD_ISSET(fd_sock, &fdread_copy) is true
+			if (fd_sock == sock_fd)
+				add_network();
+			else if (!net->is_read){
+				std::cout << "Receiving..." << std::endl;
+				char buff[BUFFER_SIZE];
+				int bytes = recv(net->get_socket_fd(), buff, sizeof(buff), 0);
+				if (bytes < WA7ED)
+					net->is_read = true;
 				else
 				{
 					std::cout << "Receiving..." << std::endl;
@@ -99,11 +122,29 @@ void multiplexing(Webserv &webserv)
 			else if (FD_ISSET(fd_sock, &fdwrite_copy)) // sending data to clients when FD_ISSET(fd_sock, &fdwrite_copy) is true
 			{
 				std::cout << "Sending..." << std::endl;
+					net->handle_req(buff, bytes);
+				FD_CLR(fd_sock, &fdread);
+				FD_SET(fd_sock, &fdwrite);
+			}
+			if (FD_ISSET(fd_sock, &fdwrite))
+			{
+				std::string response = "HTTP/1.1 200 OK\r\n"
+									   "Content-Type: text/plain\r\n"
+									   "Content-Length: 13\r\n"
+									   "\r\n"
+									   "Hello, world!";
+				send(net->get_socket_fd(), response.c_str(), response.size(), 0);
+				// FD_CLR(fd_sock, &fdread);
+				// FD_CLR(fd_sock, &fdwrite);
 			}
 			else if (FD_ISSET(fd_sock, &fderror_copy))
 			{
 				std::cout << "Deleting..." << std::endl;
 				webserv.delete_network(fd_sock);
+			else
+			{
+				std::cout << "Deleting..." << std::endl;
+				delete_network(fd_sock);
 			}
 		}
 	}

@@ -13,11 +13,14 @@ class Webserv
   fd_set fdwrite;
   fd_set fderror;
 
-  Webserv();
-  const Network * get_network(const int &s);
-  void from_read_to_write(const int &s);
-  void add_network(const bool &l, const int &s);
-  void delete_network(const int &s);
+    Webserv();
+    Webserv(std::string &port, std::string &host);
+    void  setuping();
+    Network *get_network(int s);
+    void  add_network();
+    void  delete_network(const int &s);
+    void  multiplexing(Network *net, struct timeval &t);
+    void  init_fdbit();
 };
 
 #endif

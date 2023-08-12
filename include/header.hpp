@@ -37,8 +37,12 @@ class Webserv;
 #include "webserv.hpp"
 #include "configue.hpp"
 #include "network.hpp"
+#include "request.hpp"
+#include "webserv.hpp"
 
-#define SLISTEN true
+extern ServerConfig *cnf;
+class   Network;
+class   Webserv;
 
 #define PORT "8011"
 #define BACK_LOG 1024
