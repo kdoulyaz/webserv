@@ -37,6 +37,5 @@ public:
   int location_index;
   size_t max_body_size;
   std::map<std::string, std::string> headers;
-  
 };
 #endif

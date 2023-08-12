@@ -1,13 +1,9 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#include <iostream>
-#include <string>
-#include "request.hpp"
-#include "config.hpp"
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include "header.hpp"
+#include "configue.hpp"
+
 class ServerConfig;
 class Network;
 
@@ -18,7 +14,14 @@ class Response
     public:
         Response();
         ~Response();
-        // variables
+        int post_err(Network *net);
+        int check_serv(Network *net);
+        void send_err(int net_socket, int code);
+        int loc_matched(Network *net, int index);
+        void send_res(Network *net, std::string key);
+        std::string getContentType(std::string &filename);
+
+
 
 };
 

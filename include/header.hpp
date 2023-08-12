@@ -26,9 +26,12 @@
 #include <fcntl.h>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
+#include <sys/wait.h>
 #include "configue.hpp"
 #include "network.hpp"
 #include "request.hpp"
+#include "response.hpp"
 
 extern ServerConfig *cnf;
 
@@ -43,7 +46,6 @@ extern ServerConfig *cnf;
 #define WA7ED 1
 #define NO9TA "."
 #define SLASH "/"
-#define WALO ""
 #define ZERO 0
 #define SEP "\r\n\r\n"
 #define LINE_SEP "\r\n"
@@ -53,6 +55,9 @@ extern ServerConfig *cnf;
 #define GET "GET"
 #define DELETE "DELETE"
 #define CONTENT "Content-Type"
+#define HOST "Host"
+#define WALO ""
+
 
 
 #endif

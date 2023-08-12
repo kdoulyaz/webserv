@@ -52,7 +52,6 @@ void Webserv::add_network()
 
 void Webserv::delete_network(Network *net)
 {
-
   if ((net && net->is_done) == true)
   {
     std::cout << "Client disconnected." << std::endl;

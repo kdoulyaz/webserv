@@ -32,8 +32,8 @@ int main(int argc, char **argv)
         servers[i]->multiplexing(net, t);
     }
     delete cnf;
-    return (false);
+    return (1);
   }
   std::cout << "Webserv: ./webserv <config_file>" << std::endl;
-  return (false);
+  return (1);
 }
