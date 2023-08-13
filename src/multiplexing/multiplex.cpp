@@ -51,6 +51,7 @@ void Webserv::init_fdbit()
 void Webserv::multiplexing(Network *net, struct timeval &t)
 {
 // Response respons;
+std::cout << maxfd_sock << std::endl;
 	init_fdbit();
 	if (select(maxfd_sock + WA7ED, &fdread, &fdwrite, NULL, &t) < ZERO){
 		std::cerr << "select: " << strerror(errno) << std::endl;
@@ -79,6 +80,6 @@ void Webserv::multiplexing(Network *net, struct timeval &t)
 			std::cout << "end" << std::endl;
 		}
 			// Client disconnected
-	}	
 		delete_network(net);
+	}	
 }
