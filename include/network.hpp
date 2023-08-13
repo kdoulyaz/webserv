@@ -2,6 +2,7 @@
 #define NETWORK_HPP
 
 #include "header.hpp"
+#include "request.hpp"
 
 class Network
 {

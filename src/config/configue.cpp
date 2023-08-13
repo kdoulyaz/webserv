@@ -1,4 +1,4 @@
-#include "configue.hpp"
+#include "../../include/header.hpp"
 
 ServerConfig::ServerConfig()
 {
@@ -93,7 +93,7 @@ void ServerConfig::parseLocationConfigLine(std::string& line)
 
 ServerConfig::ServerConfig(std::string filename)
 {
-    std::ifstream file(filename);
+    std::ifstream file(filename.c_str());
 
     if (file.is_open())
     {

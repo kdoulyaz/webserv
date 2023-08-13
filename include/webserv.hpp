@@ -3,15 +3,25 @@
 
 #include "header.hpp"
 
+class Network;
+class Request;
+
 class Webserv
 {
+  private:
+    int sock_fd;
+  	struct addrinfo hints;
+	  struct addrinfo *records;
+    std::vector<Network *> nets;
+    int maxfd_sock;
+    fd_set net_fd;
+    fd_set fdread;
+    fd_set fdwrite;
+    fd_set fderror;
+    std::string port;
+    std::string host;
+
   public:
-  ServerConfig *config;
-  std::vector<Network> nets;
-  int maxfd;
-  fd_set fdread;
-  fd_set fdwrite;
-  fd_set fderror;
 
     Webserv();
     Webserv(std::string &port, std::string &host);

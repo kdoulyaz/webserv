@@ -1,6 +1,6 @@
-#ifndef CONFIG_HPP
-#define CONFIG_HPP
 
+#ifndef CONFIGUE_HPP
+#define CONFIGUE_HPP
 #include "header.hpp"
 
 class ServerConfig
@@ -10,7 +10,7 @@ class ServerConfig
     void parseServerConfigLine(std::string& line);
     void parseLocationConfigLine(std::string& line);
 
-    struct LocationConfig
+    typedef struct
     {
       std::string root;
       std::string autoindex;
@@ -20,9 +20,9 @@ class ServerConfig
       std::vector<std::string> index;
       std::map<std::string, std::string> cgiPath;
       std::vector<std::string> locationConfig;
-    };
+    } LocationConfig;
 
-    struct Server
+    typedef struct
     {
       std::string host;
       std::string port;
@@ -31,7 +31,7 @@ class ServerConfig
       std::map<std::string, std::string> errorPage404;
       std::vector<std::string> serverName;
       std::vector<LocationConfig> locations;
-    };
+    } Server;
 
     std::vector<Server> serverConfigs;
 
@@ -39,5 +39,5 @@ class ServerConfig
     ~ServerConfig();
     ServerConfig(std::string filename);
 };
-
 #endif
+

@@ -1,8 +1,14 @@
 #include "header.hpp"
 
-Network::Network(const bool & l, const int & s)
-: isListen(l)
-, sock_fd(s)
+Network::Network()
+{
+  addr_size = sizeof(address);
+  rcved = 0;
+  header = true;
+  is_read = false;
+}
+
+Network::~Network()
 {}
 
 int Network::get_socket_fd()
