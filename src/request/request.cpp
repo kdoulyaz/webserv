@@ -204,3 +204,17 @@ std::map<std::string, std::string> Request::get_headers()
 {
   return headers;
 }
+
+std::string Request::get_body(){
+  return body;
+}
+
+bool Request::connection_status()
+{
+  if (map.count("connection"))
+  {
+    if (map["connection"].find("close", 0) != std::string::npos)
+      return (false);
+  }
+  return (true);
+}

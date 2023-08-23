@@ -31,7 +31,7 @@ $(OBJS_DIR):
 	@mkdir -p $(OBJS_DIR)
 	@$(foreach dir,$(SUBDIRS),mkdir -p $(patsubst $(SRCS_DIR)/%,$(OBJS_DIR)/%,$(dir));)
 
-$(OBJS_DIR)/%.o : $(SRCS_DIR)/%.cpp | creat_dir
+$(OBJS_DIR)/%.o : $(SRCS_DIR)/%.cpp 
 	@$(CPP) $(CFLAGS) -c $< -o $@
 	@$(PRINTF) "\rCompiling $(BLUE)$<$(DEFAULT)..."
 
@@ -46,4 +46,5 @@ fclean : clean
 	
 re : fclean all
 		@clear
+
 .PHONY: all clean fclean re 

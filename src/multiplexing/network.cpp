@@ -62,3 +62,13 @@ void Network::handle_req(const char *req_body, size_t size)
   else if (request.get_met() == "POST" and handle_post(this) and !request.is_err and cnf->serverConfigs[request.srv_index].locations[request.location_index].cgiPath[ext].empty())
     request.handle_body(str);
 }
+
+Response* Network::get_respo()
+{
+  return (&_respo);
+}
+
+Request* Network::get_request()
+{
+  return (&request);
+}

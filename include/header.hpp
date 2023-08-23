@@ -26,14 +26,20 @@
 #include <fcntl.h>
 #include <cstring>
 #include <ctime>
+#include "ContentType.hpp"
 #include "configue.hpp"
-#include "network.hpp"
 #include "request.hpp"
+#include "response.hpp"
+#include "network.hpp"
 #include "webserv.hpp"
 
 extern ServerConfig *cnf;
+class	ContentType;
 class   Network;
 class   Webserv;
+class	Request;
+class	Response;
+
 
 #define PORT "8011"
 #define BACK_LOG 1024
@@ -53,6 +59,6 @@ class   Webserv;
 #define GET "GET"
 #define DELETE "DELETE"
 #define CONTENT "Content-Type"
-
-
+#define MSG_BUFF 40000 
+#define HEAD	"HEAD"
 #endif

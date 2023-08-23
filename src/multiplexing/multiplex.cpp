@@ -58,7 +58,8 @@ void Webserv::multiplexing(Network *net, struct timeval &t)
 		if (fd_sock != sock_fd && !(net = get_network(fd_sock)))
 			continue;
 
-		if (FD_ISSET(fd_sock, &fdread)){ // reading data from clients when FD_ISSET(fd_sock, &fdread_copy) is true
+		if (FD_ISSET(fd_sock, &fdread))
+		{// reading data from clients when FD_ISSET(fd_sock, &fdread_copy) is true
 			if (fd_sock == sock_fd)
 				add_network();
 			else if (!net->is_read){
@@ -69,19 +70,25 @@ void Webserv::multiplexing(Network *net, struct timeval &t)
 					net->is_read = true;
 				else
 					net->handle_req(buff, bytes);
-				FD_CLR(fd_sock, &fdread);
-				FD_SET(fd_sock, &fdwrite);
+				if (net->is_read == 1)
+				{
+					// std::cout << "heeererrr" << std::endl;
+					buildResponse(*net);
+					FD_CLR(fd_sock, &fdread);
+					FD_SET(fd_sock, &fdwrite);
+				}
 			}
 			if (FD_ISSET(fd_sock, &fdwrite))
 			{
-				std::string response = "HTTP/1.1 200 OK\r\n"
-									   "Content-Type: text/plain\r\n"
-									   "Content-Length: 13\r\n"
-									   "\r\n"
-									   "Hello, world!";
-				send(net->get_socket_fd(), response.c_str(), response.size(), 0);
-				// FD_CLR(fd_sock, &fdread);
-				// FD_CLR(fd_sock, &fdwrite);
+				sendRespo(*net);
+					// std::string response = "HTTP/1.1 200 OK\r\n"
+					// 					   "Content-Type: text/plain\r\n"
+					// 					   "Content-Length: 13\r\n"
+					// 					   "\r\n"
+					// 					   "Hello, world!";
+					// send(net->get_socket_fd(), response.c_str(), response.size(), 0);
+					// FD_CLR(fd_sock, &fdread);
+					// FD_CLR(fd_sock, &fdwrite);
 			}
 			else
 			{

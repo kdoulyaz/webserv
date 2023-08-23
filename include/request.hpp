@@ -26,10 +26,12 @@ public:
   void handle_req_l(std::string req_line);
   std::string get_loc();
   std::string get_met();
+  std::string get_body();
   std::map<std::string, std::string> get_headers();
   void handle_body(std::string req_body);
   std::string parse_chunked(std::string input);
-
+  bool  connection_status();
+  
   bool finished;
   int is_err;
   size_t req_size;
@@ -37,6 +39,7 @@ public:
   int location_index;
   size_t max_body_size;
   std::map<std::string, std::string> headers;
+
   
 };
 #endif
