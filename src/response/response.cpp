@@ -121,4 +121,26 @@ void Response::send_res(Network *net, std::string key)
 
         net->file_size -= bytes_read;
     }
-}
+   }
+  void  Response::deleteMethod(std::string &fileName)
+  {
+        if (access(fileName.c_str(), F_OK) == -1) 
+        {
+           std::cout << "not exist" << std::endl;
+           // ERROR file not found
+        } 
+        else
+        {
+            if (remove(fileName.c_str()) == 0) 
+            {
+              // response OK
+              std::cout << "exist !" << std::endl;
+            }
+            else 
+            {
+            // ERROR cannot remove file
+            std::cout << "exist but error !" << std::endl;
+            }
+        }
+  }
+
