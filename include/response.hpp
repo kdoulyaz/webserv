@@ -20,6 +20,7 @@ class Response
         int loc_matched(Network *net, int index);
         void send_res(Network *net, std::string key);
         std::string getContentType(std::string &filename);
+        void  deleteMethod(std::string &fileName);
 
 
 
