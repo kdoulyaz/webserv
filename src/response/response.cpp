@@ -1,124 +1,720 @@
-#include "../../include/response.hpp"
+#include "header.hpp"
 
 Response::Response()
 {
+    _target = "";
+    body_data.empty();
+    body_len = 0;
+    payload_content = "";
+    respo_body = "";
+    location_header = "";
+    _scode = 0;
+    cgi_flag = 0;
+    cgi_pipfd[0] = -1;
+    cgi_pipfd[1] = -1;
+    cgi_respo_len = 0;
+    aut_indx_flag = false;
 }
+
+int Response::get_sCode() const
+{
+    return (_scode);
+}
+
+int Response::get_Cgi() const
+{
+    return (cgi_flag);
+}
+
+std::string Response::getStatusMsg() const
+{
+    return (statusMsg);
+}
+
+std::string    Response::get_Content()
+{
+    return (payload_content);
+}
+
+bool Response::get_AutIndx_Flag() const
+{
+    return (aut_indx_flag);
+}
+
+std::string Response::get_target() const
+{
+    return (_target);
+}
+
+size_t Response::get_body_len() const
+{
+    return (body_len);
+}
+
+std::string Response::get_respo_body() const
+{
+    return (respo_body);
+}
+
+void Response::setResponseHeader(const short &_code, const std::string &_msg)
+{
+    this->_scode = _code;
+    this->statusMsg = _msg;
+}
+
+void Response::set_sCode(short scode)
+{
+    _scode = scode;
+}
+
+void Response::set_bdyTorespo()
+{
+    respo_body.insert(respo_body.begin(), body_data.begin(), body_data.end());
+}
+
+/* Constructs Status line based on status code. */
+void Response::set_StatusLin()
+{
+    payload_content.append("HTTP/1.1 " + toString(_scode) + " ");
+    payload_content.append(_sCodeStr(_scode));
+    payload_content.append("\r\n");
+}
+
 Response::~Response()
 {
 }
-std::string Response::getContentType(std::string &filename)
-{
-    if (filename.empty())
-        return WALO;
-    std::map<std::string, std::string> contentTypeMap;
-    contentTypeMap[".html"] = "text/html";
-    contentTypeMap[".png"] = "image/png";
-    contentTypeMap[".mp4"] = "video/mp4";
-    contentTypeMap[".mp3"] = "audio/mpeg";
-    contentTypeMap[".css"] = "text/css";
-    contentTypeMap[".js"] = "text/javascript";
-    contentTypeMap[".json"] = "application/json";
-    contentTypeMap[".xml"] = "application/xml";
-    contentTypeMap[".pdf"] = "application/pdf";
-    contentTypeMap[".zip"] = "application/zip";
-    contentTypeMap[".txt"] = "text/plain";
-    contentTypeMap[".gif"] = "image/gif";
-    contentTypeMap[".jpg"] = "image/jpeg";
-    contentTypeMap[".svg"] = "image/svg+xml";
-    contentTypeMap[".wav"] = "audio/wav";
-    contentTypeMap[".mpg"] = "video/mpeg";
-    contentTypeMap[".mov"] = "video/quicktime";
-    contentTypeMap[".avi"] = "video/x-msvideo";
-    contentTypeMap[".php"] = "php";
-    contentTypeMap[".py"] = "python";
 
-    std::string contentType = "application/octet-stream";                // default content type is binary
-    std::string extension = filename.substr(filename.find_last_of(NO9TA));
-    if (contentTypeMap.count(extension) > 0)
-    {
-        contentType = contentTypeMap[extension];
-        return contentType;
-    }
-    return contentType;
+void Response::addFiled_date()
+{
+    char d[1000];
+    time_t now = time(0);
+    struct tm tn = *gmtime(&now);
+
+    strftime(d, sizeof(d), "%a, %d %b %Y %H:%M:%S %Z", &tn);
+    payload_content.append("Date: ");
+    payload_content.append(d);
+    payload_content.append("\r\n");
 }
 
-void Response::send_res(Network *net, std::string key)
+void Response::addFiled_location()
 {
-    std::ostringstream contentLengthHeader;
-    std::string response;
+    if (location_header.length())
+        payload_content.append("Location: " + location_header + "\r\n");
+}
 
-    if (!net->header_sent)
+void Response::addField_Server()
+{
+    payload_content.append("Server: SrVr\r\n");
+}
+
+void Response::addField_ConnectionFlag(Request &req_)
+{
+    if (req_.connection_status())
+        payload_content.append("Connection: keep-alive\r\n");
+}
+
+void Response::addFiled_ContentLen()
+{
+    std::stringstream strstm;
+    strstm << respo_body.length();
+    payload_content.append("Content-Length: ");
+    payload_content.append(strstm.str());
+    payload_content.append("\r\n");
+}
+
+void Response::addField_ContentType()
+{
+    payload_content.append("Content-Type: ");
+    if (_target.rfind(".", std::string::npos) != std::string::npos && _scode == 200)
+        payload_content.append(contentype.getConteType(_target.substr(_target.rfind(".", std::string::npos))));
+    else
+        payload_content.append(contentype.getConteType("default"));
+    payload_content.append("\r\n");
+}
+
+void Response::addFields(Request &req_)
+{
+    addField_ContentType();
+    addFiled_ContentLen();
+    addField_ConnectionFlag(req_);
+    addField_Server();
+    addFiled_location();
+    addFiled_date();
+    payload_content.append("\r\n");
+}
+
+void Response::SrvErrPages(const ServerConfig::Server &srv_, const short &status_, const char *statusMsg_)
+{
+    std::map<short, std::string>::const_iterator it =
+        srv_.errorPage.find(status_);
+    std::string tmp = std::string(statusMsg_);
+
+    setResponseHeader(status_, tmp);
+    if (it == srv_.errorPage.end())
     {
-        if (key == "404:")
-            net->file.open("root/error/404.html");
-        else
-            net->file.open(net->_file_name.c_str());
-        if (!net->file.is_open() && !net->_file_name.empty())
-        {
-            std::cout << "Error opening file" << net->_file_name << std::endl;
-            net->is_done = true;
-            return;
-        }
+        respo_body = getErrPage(500);
+    }
+}
 
-        // Get file size
-        net->file.seekg(0, std::ios::end);
-        net->file_size = net->file.tellg();
-        net->file.seekg(0, std::ios::beg);
+std::string Response::toString(short val) const
+{
+    std::stringstream stream;
+    stream << val;
+    return stream.str();
+}
 
-        // Create response header
-        if (key == "404:"){
-            response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n";
-            contentLengthHeader << "Content-Length: " << net->file_size << "\r\n\r\n";
-            response += contentLengthHeader.str();
-        }
-        else{
-            response = "HTTP/1.1 200 OK\r\nContent-Type: " + getContentType(net->_file_name) + "\r\n";
-            contentLengthHeader << "Content-Length: " << net->file_size << "\r\n\r\n";
-            response += contentLengthHeader.str();
-        }
+std::string Response::getErrPage(short err_code) const
+{
+    std::string errCodeStr = this->toString(err_code);
 
-        if (send(net->get_socket_fd(), response.c_str(), response.size(), 0) < 1)
-        {
-            std::cout << "Error sending response header" << std::endl;
-            net->is_done = true;
-            net->file.close();
-            return;
-        }
+    return ("<html>\r\n<head><title>" + errCodeStr + " " +
+            "Error" + " </title></head>\r\n" + "<body>\r\n" +
+            "<center><h1>" + errCodeStr + " " + "Error" + "</h1></center>\r\n");
+    // std::string p = "<!DOCTYPE html>\n"
+    //                     "<html>\n"
+    //                     "<head>\n"
+    //                     "    <title>Error Page</title>\n"
+    //                     "</head>\n"
+    //                     "<body>\n"
+    //                     "    <h1>Oops! Something went wrong.</h1>\n"
+    //                     "    <p>We're sorry, but there was an error processing your request.</p>\n"
+    //                     "</body>\n"
+    //                     "</html>";
+    //                     respo_body += p;
+}
 
-        net->header_sent = true;
+void Response::setSrvDefErrPage()
+{
+    respo_body = getErrPage(500);
+}
+
+int Response::BuildHtmlIndx()
+{
+    DIR *directory = opendir(_target.c_str());
+    if (directory == NULL)
+    {
+        std::cerr << "opendir failed" << std::endl;
+        return (1);
+    }
+
+    std::string dirListPage;
+    dirListPage.append("<html>\n");
+    dirListPage.append("<head>\n");
+    dirListPage.append("<title> Index of " + _target + "</title>\n");
+    dirListPage.append("</head>\n");
+    dirListPage.append("<body>\n");
+    dirListPage.append("<h1> Index of " + _target + "</h1>\n");
+    dirListPage.append("<table>\n");
+    dirListPage.append("<tr><th>File Name</th><th>Last Modification</th><th>File Size</th></tr>\n");
+
+    struct dirent *entityStruct;
+    while ((entityStruct = readdir(directory)) != NULL)
+    {
+        if (strcmp(entityStruct->d_name, ".") == 0)
+            continue;
+
+        std::string file_path = _target + entityStruct->d_name;
+        struct stat file_stat;
+        stat(file_path.c_str(), &file_stat);
+
+        dirListPage.append("<tr>\n");
+        dirListPage.append("<td>");
+        dirListPage.append("<a href=\"" + std::string(entityStruct->d_name) + "\">" + std::string(entityStruct->d_name) + "</a>");
+        if (S_ISDIR(file_stat.st_mode))
+            dirListPage.append("/");
+        dirListPage.append("</td>\n");
+        dirListPage.append("<td>" + std::string(ctime(&file_stat.st_mtime)) + "</td>\n");
+        dirListPage.append("<td>");
+        if (!S_ISDIR(file_stat.st_mode))
+            dirListPage.append(std::to_string(file_stat.st_size));
+        dirListPage.append("</td>\n");
+        dirListPage.append("</tr>\n");
+    }
+    dirListPage.append("</table>\n");
+    dirListPage.append("</body>\n");
+    dirListPage.append("</html>\n");
+
+    body_data.assign(dirListPage.begin(), dirListPage.end());
+    body_len = body_data.size();
+    return 0;
+}
+
+std::string Response::_sCodeStr(short _sCode)
+{
+    switch (_sCode)
+    {
+    case 100:
+        return "Continue";
+    case 200:
+        return "OK";
+    case 300:
+        return "Multiple Choices";
+    case 400:
+        return "Bad Request";
+    case 401:
+        return "Unauthorized";
+    case 403:
+        return "Forbidden";
+    case 404:
+        return "Not Found";
+    case 405:
+        return "Method Not Allowed";
+    case 500:
+        return "Internal Server Error";
+    default:
+        return "Undefined";
+    }
+}
+
+int Response::readFile()
+{
+    std::ifstream file(_target.c_str());
+
+    if (file.fail())
+    {
+        _scode = 404;
+        return 1;
+    }
+
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    respo_body = ss.str();
+    return 0;
+}
+
+void Response::BuildErrPage(Request &req_)
+{
+    ServerConfig::Server &srv_ = cnf->serverConfigs[req_.srv_index];
+    ServerConfig::LocationConfig &loc_ = srv_.locations[req_.location_index];
+
+    if (!srv_.errorPage.count(_scode) || srv_.errorPage.at(_scode).empty() ||
+        req_.get_met() == DELETE || req_.get_met() == POST)
+    {
+        setSrvDefErrPage();
     }
     else
     {
-        const int buff_size = 1024;
-        char buffer[buff_size];
-
-        net->file.read(buffer, buff_size);
-        int bytes_read = net->file.gcount();
-
-        if (bytes_read == -1)
+        if (_scode >= 400 && _scode < 500)
         {
-            std::cout << "Error reading file" << std::endl;
-            net->is_done = true;
-            net->file.close();
-            return;
+            location_header = srv_.errorPage[_scode];
+            if (location_header[0] != '/')
+                location_header.insert(location_header.begin(), '/');
+            _scode = 300;
         }
-
-        if (bytes_read < buff_size)
+        _target = loc_.root + srv_.errorPage[_scode];
+        short _old_scode = _scode;
+        if (readFile())
         {
-            if (send(net->get_socket_fd(), buffer, bytes_read, 0) == -1)
-                std::cout << "error sending response2" << std::endl;
-            net->is_done = true;
-            net->file.close();
-            return;
+            _scode = _old_scode;
+            respo_body = getErrPage(_scode);
         }
-
-        if (send(net->get_socket_fd(), buffer, bytes_read, 0) < 1)
-        {
-            std::cout << "Error sending response" << std::endl;
-            net->file.close();
-            return;
-        }
-
-        net->file_size -= bytes_read;
     }
+}
+
+static std::string comb_Paths(const std::string &basePath, const std::string &middlePath, const std::string &endPath)
+{
+    std::string result;
+    int baseLength = basePath.length();
+    int middleLength = middlePath.length();
+
+    // Ensure correct separators and remove duplicate separators
+    if (baseLength > 0 && basePath[baseLength - 1] == '/' && !middlePath.empty() && middlePath[0] == '/')
+    {
+        result = basePath.substr(0, baseLength - 1); // Remove trailing '/'
+    }
+    else
+    {
+        result = basePath;
+        if (baseLength > 0 && basePath[baseLength - 1] != '/')
+        {
+            result += '/';
+        }
+    }
+
+    if (middleLength > 0 && middlePath[0] == '/')
+    {
+        result += middlePath.substr(1); // Remove leading '/'
+    }
+    else
+    {
+        result += middlePath;
+        if (middleLength > 0 && middlePath[middleLength - 1] != '/')
+        {
+            result += '/';
+        }
+    }
+
+    if (!endPath.empty() && endPath[0] == '/')
+    {
+        result += endPath.substr(1); // Remove leading '/'
+    }
+    else
+    {
+        result += endPath;
+    }
+
+    return result;
+}
+
+static bool isDir(std::string path)
+{
+    struct stat file;
+    if (stat(path.c_str(), &file) != 0)
+        return (false);
+    return (S_ISDIR(file.st_mode));
+}
+
+static void LocationMatch(std::string pth, std::vector<ServerConfig::LocationConfig> &loc, std::string &key)
+{
+    size_t match = 0;
+
+    for (std::vector<ServerConfig::LocationConfig>::const_iterator it = loc.begin(); it != loc.end(); ++it)
+    {
+        if (pth.find(it->root) == 0)
+        {
+            if (it->root == "/" || pth.length() == it->root.length() || pth[it->root.length()] == '/')
+            {
+                if (it->root.length() > match)
+                {
+                    match = it->root.length();
+                    key = it->root;
+                }
+            }
+        }
+    }
+}
+
+static bool is_Method(std::string method, ServerConfig::LocationConfig &location, short &c)
+{
+    std::vector<std::string> methods = location.methods;
+
+    if ((method == "GET" && methods[0] == "") ||
+        (method == "POST" && methods[1] == "") ||
+        (method == "DELETE" && methods[2] == ""))
+    {
+        c = 405;
+        return true;
+    }
+    return false;
+}
+
+static bool fileExists(const std::string &f)
+{
+    std::ifstream file(f.c_str());
+    return (file.good());
+}
+
+static bool valid_Ret(const ServerConfig::LocationConfig &loc, short &code, std::string &location)
+{
+    if (!loc.return_.empty())
+    {
+        code = 300;
+        location = loc.return_;
+        if (location[0] != '/')
+        {
+            location.insert(location.begin(), '/');
+        }
+        return true;
+    }
+    return false;
+}
+
+// srv_target() "int Response::srv_target(Request &req)
+// {
+//     std::string location_key;
+//     ServerConfig::Server &_server = cnf->serverConfigs[req.srv_index];
+
+//     if (!location_key.empty())
+//     {
+//         ServerConfig::LocationConfig target_location = *_server.getLocationKey(location_key);
+
+//         if (is_Method(req.get_met(), target_location, _scode))
+//         {
+//             std::cout << "METHOD NOT ALLOWED \n";
+//             return (1);
+//         }
+
+//         if (req.get_body().length() > std::stoul(_server.maxBodySize))
+//         {
+//             _scode = 413;
+//             return (1);
+//         }
+
+//         if (valid_Ret(target_location, _scode, location_header))
+//             return (1);
+
+//         // if (target_location.getPath().find("cgi-bin") != std::string::npos)
+//         // {
+//         //     // Placeholder for CGI handling
+//         //     // return (handleCgi(location_key));
+//         // }
+
+//         // if (!target_location.root.empty())
+//         // {
+//         //     // Replace alias logic or any other required processing
+//         // }
+//         // else
+//         // {
+//         //     // Append root logic or any other required processing
+//         // }
+
+//         // if (!target_location.cgiPath.empty())
+//         // {
+//         //     // Check for CGI extension and handle accordingly
+//         // }
+
+//         if (isDir(_target))
+//         {
+//             if (_target.back() != '/')
+//             {
+//                 _scode = 301;
+//                 location_header = req.get_loc() + "/";
+//                 return (1);
+//             }
+
+//             if (!target_location.index.empty())
+//                 _target += target_location.index[0];
+//             else
+//                 _target += _server.locations[req.location_index].index[0];
+
+//             if (!fileExists(_target))
+//             {
+//                 if (target_location.autoindex == "on")
+//                 {
+//                     _target.erase(_target.find_last_of('/') + 1);
+//                     aut_indx_flag = true;
+//                     return (0);
+//                 }
+//                 else
+//                 {
+//                     _scode = 403;
+//                     return (1);
+//                 }
+//             }
+
+//             if (isDir(_target))
+//             {
+//                 _scode = 301;
+//                 if (!target_location.index.empty())
+//                     location_header = comb_Paths(req.get_loc(), target_location.index[0], "");
+//                 else
+//                     location_header = comb_Paths(req.get_loc(), _server.locations[req.srv_index].index[0], "");
+//                 if (location_header.back() != '/')
+//                     location_header.push_back('/');
+
+//                 return (1);
+//             }
+//         }
+//     }
+//     else
+//     {
+//         _target = comb_Paths(_server.locations[req.location_index].root, req.get_loc(), "");
+//         if (isDir(_target))
+//         {
+//             if (_target.back() != '/')
+//             {
+//                 _scode = 301;
+//                 location_header = req.get_loc() + "/";
+//                 return (1);
+//             }
+//             _target += _server.locations[req.srv_index].index[0];
+//             if (!fileExists(_target))
+//             {
+//                 _scode = 403;
+//                 return (1);
+//             }
+//             if (isDir(_target))
+//             {
+//                 _scode = 301;
+//                 location_header = comb_Paths(req.get_loc(), _server.locations[req.srv_index].index[0], "");
+//                 if (location_header.back() != '/')
+//                     location_header.push_back('/');
+//                 return (1);
+//             }
+//         }
+//     }
+//     return (0);
+// }
+
+// int Response::BuildBody(Request &req)
+// {
+//     ServerConfig::Server &srv = cnf->serverConfigs[req.srv_index];
+//     // ServerConfig::LocationConfig &loc = srv.locations[req.location_index];
+
+//     try
+//     {
+//         if (req.get_body().length() > std::stoi(srv.maxBodySize))
+//         {
+//             _scode = 413;
+//             return (1);
+//         }
+//     }
+//     catch(const std::exception& e)
+//     {
+//         std::cerr << e.what() << '\n';
+//     }
+
+//     if (srv_target(req))
+//         return (1);
+//     return 1;
+// }
+
+int Response::srv_target(Request &req)
+{
+    std::string location_key;
+    ServerConfig::Server &_server = cnf->serverConfigs[req.srv_index];
+
+    LocationMatch(req.get_loc(), _server.locations, location_key);
+
+    if (location_key.empty())
+        _target = comb_Paths(_server.locations[req.location_index].root, req.get_loc(), "");
+    else
+    {
+        ServerConfig::LocationConfig target_location = *_server.getLocationKey(location_key);
+
+        if (is_Method(req.get_met(), target_location, _scode))
+        {
+            std::cout << "METHOD NOT ALLOWED \n";
+            return (1);
+        }
+
+        if (req.get_body().length() > std::stoul(_server.maxBodySize))
+        {
+            _scode = 413;
+            return (1);
+        }
+
+        if (valid_Ret(target_location, _scode, location_header))
+            return (1);
+        // if (target_location.getPath().find("cgi-bin") != std::string::npos)
+        // {
+        //     // Placeholder for CGI handling
+        //     // return (handleCgi(location_key));
+        // }
+
+        // if (!target_location.root.empty())
+        // {
+        //     // Replace alias logic or any other required processing
+        // }
+        // else
+        // {
+        //     // Append root logic or any other required processing
+        // }
+
+        // if (!target_location.cgiPath.empty())
+        // {
+        //     // Check for CGI extension and handle accordingly
+        // }
+        if (isDir(_target))
+        {
+            if (_target.back() != '/')
+            {
+                _scode = 301;
+                location_header = req.get_loc() + "/";
+                return (1);
+            }
+
+            if (!target_location.index.empty())
+            {
+                bool indexFound = false;
+                for (std::vector<std::string>::const_iterator it = target_location.index.begin(); it != target_location.index.end(); ++it)
+                {
+                    std::string potentialIndexPath = comb_Paths(_target, *it, "");
+                    if (fileExists(potentialIndexPath))
+                    {
+                        _target = potentialIndexPath;
+                        indexFound = true;
+                        break;
+                    }
+                }
+
+                if (!indexFound)
+                {
+                    if (target_location.autoindex == "on")
+                    {
+                        _target.erase(_target.find_last_of('/') + 1);
+                        aut_indx_flag = true;
+                        return (0);
+                    }
+                    else
+                    {
+                        _scode = 403;
+                        return (1);
+                    }
+                }
+            }
+
+            if (!fileExists(_target))
+            {
+                if (target_location.autoindex == "on")
+                {
+                    _target.erase(_target.find_last_of('/') + 1);
+                    aut_indx_flag = true;
+                    return (0);
+                }
+                else
+                {
+                    _scode = 403;
+                    return (1);
+                }
+            }
+
+            if (isDir(_target))
+            {
+                _scode = 301;
+                location_header = comb_Paths(req.get_loc(), target_location.index[0], "");
+                if (location_header.back() != '/')
+                    location_header.push_back('/');
+
+                return (1);
+            }
+        }
+    }
+    return (0);
+}
+
+int Response::BuildBody(Request &req)
+{
+    ServerConfig::Server &srv = cnf->serverConfigs[req.srv_index];
+    // ServerConfig::LocationConfig &loc = srv.locations[req.location_index];
+
+    if (req.get_body().length() > static_cast<size_t>(std::stoi(srv.maxBodySize)))
+    {
+        _scode = 413;
+        return (1);
+    }
+    // std::cout << "heee111reeee" << std::endl;
+    if (srv_target(req))
+        return (1);
+    if (cgi_flag || aut_indx_flag)
+        return (0);
+    if (req.get_met() == GET)
+    {
+        if (readFile())
+            return (1);
+    }
+    else if (req.get_met() == POST)
+    {
+        // handle post i guess
+    }
+    else if (req.get_met() == DELETE)
+    {
+        if (!fileExists(_target))
+        {
+            _scode = 404;
+            return (1);
+        }
+        if (remove(_target.c_str()) != 0)
+        {
+            _scode = 500;
+            return (1);
+        }
+    }
+    _scode = 200;
+    return (0);
+}
+
+void Response::respo_Cut(size_t i)
+{
+    payload_content = payload_content.substr(i);
 }

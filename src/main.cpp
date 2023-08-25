@@ -1,5 +1,4 @@
-#include "../include/header.hpp"
-#include "../include/webserv.hpp"
+#include "header.hpp"
 
 ServerConfig *cnf;
 

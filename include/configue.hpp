@@ -20,6 +20,7 @@ class ServerConfig
       std::vector<std::string> index;
       std::map<std::string, std::string> cgiPath;
       std::vector<std::string> locationConfig;
+      std::string getPath() const;
     } LocationConfig;
 
     typedef struct
@@ -27,10 +28,11 @@ class ServerConfig
       std::string host;
       std::string port;
       std::string maxBodySize;
-      std::map<std::string, std::string> errorPage400;
-      std::map<std::string, std::string> errorPage404;
+      std::map<short, std::string> errorPage;
+    //  std::map<std::string, std::string> errorPage404;
       std::vector<std::string> serverName;
       std::vector<LocationConfig> locations;
+      const std::vector<LocationConfig>::iterator getLocationKey(std::string key);
     } Server;
 
     std::vector<Server> serverConfigs;
@@ -38,6 +40,7 @@ class ServerConfig
     ServerConfig();
     ~ServerConfig();
     ServerConfig(std::string filename);
+    void  initErrPages(void);
 };
 #endif
 

@@ -2,9 +2,11 @@
 
 Webserv::Webserv(){}
 
+Webserv::Webserv() {}
+
 Webserv::Webserv(std::string &port, std::string &host)
 {
-	std::cout << "Server was Created" << std::endl;
+  std::cout << "Server was Created" << std::endl;
 
   bzero(&hints, sizeof(hints));
   hints.ai_family = AF_INET;
@@ -16,18 +18,18 @@ Webserv::Webserv(std::string &port, std::string &host)
   FD_ZERO(&net_fd);
 }
 
-Network * Webserv::get_network(int f)
+Network *Webserv::get_network(int f)
 {
-	std::vector<Network *>::iterator s = nets.begin();
-	while (s < nets.end())
-	{
-		if ((*s)->get_socket_fd() == f)
-		{
-			return (*s);
-		}
-		s++;
-	}
-	return NULL;
+  std::vector<Network *>::iterator s = nets.begin();
+  while (s < nets.end())
+  {
+    if ((*s)->get_socket_fd() == f)
+    {
+      return (*s);
+    }
+    s++;
+  }
+  return NULL;
 }
 
 void Webserv::add_network()
@@ -50,21 +52,79 @@ void Webserv::add_network()
   nets.push_back(net);
 }
 
-void Webserv::delete_network(Network *net)
+void Webserv::delete_network(const int &s)
 {
-  if ((net && net->is_done) == true)
+  int maxtmp = 0;
+  std::vector<Network *>::iterator it = nets.begin();
+  while (it != nets.end())
   {
-    std::cout << "Client disconnected." << std::endl;
-    for (size_t i = 0; i < nets.size(); i++)
+    if ((*it)->get_socket_fd() != s && (*it)->get_socket_fd() > maxtmp)
+      maxtmp = (*it)->get_socket_fd();
+    if ((*it)->get_socket_fd() == s)
     {
-      if (net->get_socket_fd() == nets[i]->get_socket_fd())
-      {
-        FD_CLR(net->get_socket_fd(), &net_fd);
-        close(net->get_socket_fd());
-        nets.erase(nets.begin() + i);
-        delete net;
-        break;
-      }
+      close(s);
+      delete *it;
+      it = nets.erase(it);
+      FD_CLR(s, &fdread);
+      FD_CLR(s, &fdwrite);
+    }
+    else
+      ++it;
+  }
+  maxfd_sock = maxtmp;
+}
+
+void Webserv::buildResponse(Network &net)
+{
+  Response &rsp_ = *net.get_respo();
+  Request &req_ = *net.get_request();
+  ServerConfig::Server &srv_ = cnf->serverConfigs[req_.srv_index];
+  // ServerConfig::LocationConfig &loc_ = srv_.locations[req_.location_index];
+  if (req_.is_err || rsp_.BuildBody(req_))
+    rsp_.SrvErrPages(srv_, rsp_.get_sCode(), rsp_.getStatusMsg().c_str());
+  if (rsp_.get_Cgi())
+    return;
+  else if (rsp_.get_AutIndx_Flag())
+  {
+    std::cout << "Auto Index" << std::endl;
+    if (rsp_.BuildHtmlIndx())
+    {
+      rsp_.set_sCode(500);
+      rsp_.BuildErrPage(req_);
+    }
+    else
+    {
+      rsp_.set_sCode(200);
+      rsp_.set_bdyTorespo();
+    }
+  }
+  rsp_.set_StatusLin();
+  rsp_.addFields(req_);
+  if ((req_.get_met() == GET) || (rsp_.get_sCode() != 200))
+    rsp_.payload_content.append(rsp_.get_respo_body());
+}
+
+void Webserv::sendRespo(Network &c)
+{
+  size_t byts_sent = 0;
+  Response &rsp_ = *c.get_respo();
+  std::string response = rsp_.get_Content();
+  std::cerr << "{" <<response << "}"<<std::endl;
+  if (response.length() >= MSG_BUFF && response.length() > 0)
+    byts_sent = write(sock_fd, response.c_str(), MSG_BUFF);
+  else
+    byts_sent = write(sock_fd, response.c_str(), response.length());
+  if (byts_sent < 0)
+    std::cerr << "here coldnt wrtie to server" << std::endl;
+  else if (byts_sent == 0 || byts_sent == response.length())
+  {
+    if (c.get_request()->connection_status() == false || c.get_request()->is_err || c.get_respo()->get_Cgi())
+    {
+      delete_network(c.get_socket_fd());
+    }
+    else
+    {
+      rsp_.respo_Cut(byts_sent);
     }
   }
 }

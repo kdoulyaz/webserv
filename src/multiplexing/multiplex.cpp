@@ -26,12 +26,10 @@ void Webserv::setuping()
 
 	std::cout << "Binding socket to local address..." << std::endl;
 	bind(sock_fd, records->ai_addr, records->ai_addrlen);
-	//if bind fail
 	freeaddrinfo(records);
 
 	std::cout << "listening..." << std::endl;
 	listen(sock_fd, BACK_LOG);
-	// if listen fails
   	FD_SET(sock_fd, &net_fd);
 }
 
@@ -51,35 +49,53 @@ void Webserv::init_fdbit()
 void Webserv::multiplexing(Network *net, struct timeval &t)
 {
 // Response respons;
-std::cout << maxfd_sock << std::endl;
 	init_fdbit();
-	if (select(maxfd_sock + WA7ED, &fdread, &fdwrite, NULL, &t) < ZERO){
+	if (select(maxfd_sock + WA7ED, &fdread, &fdwrite, &fderror, &t) < ZERO){
 		std::cerr << "select: " << strerror(errno) << std::endl;
 		exit(1);
 	}
-	for (int i = 3; i < maxfd_sock + WA7ED; i++){
+	for (int fd_sock = 3; fd_sock < maxfd_sock + WA7ED; fd_sock++){
 
-		if (i != sock_fd and !(net = get_network(i)))
+		if (fd_sock != sock_fd && !(net = get_network(fd_sock)))
 			continue;
 
-		if (FD_ISSET(i, &fdread)){ // reading data from clients when FD_ISSET(i, &fdread_copy) is true
-			if (i == sock_fd)
+		if (FD_ISSET(fd_sock, &fdread))
+		{// reading data from clients when FD_ISSET(fd_sock, &fdread_copy) is true
+			if (fd_sock == sock_fd)
 				add_network();
-			else if (net and !net->is_readed){
+			else if (!net->is_read){
 				std::cout << "Receiving..." << std::endl;
 				char buff[BUFFER_SIZE];
 				int bytes = recv(net->get_socket_fd(), buff, sizeof(buff), 0);
 				if (bytes < WA7ED)
-					net->is_readed = true;
+					net->is_read = true;
 				else
 					net->handle_req(buff, bytes);
+				if (net->is_read == 1)
+				{
+					// std::cout << "heeererrr" << std::endl;
+					buildResponse(*net);
+					FD_CLR(fd_sock, &fdread);
+					FD_SET(fd_sock, &fdwrite);
+				}
+			}
+			if (FD_ISSET(fd_sock, &fdwrite))
+			{
+				sendRespo(*net);
+					// std::string response = "HTTP/1.1 200 OK\r\n"
+					// 					   "Content-Type: text/plain\r\n"
+					// 					   "Content-Length: 13\r\n"
+					// 					   "\r\n"
+					// 					   "Hello, world!";
+					// send(net->get_socket_fd(), response.c_str(), response.size(), 0);
+					// FD_CLR(fd_sock, &fdread);
+					// FD_CLR(fd_sock, &fdwrite);
+			}
+			else
+			{
+				std::cout << "Deleting..." << std::endl;
+				delete_network(fd_sock);
 			}
 		}
-		else if (FD_ISSET(i, &fdwrite)){
-			// respons:  respons.handle_response(net);
-			std::cout << "end" << std::endl;
-		}
-			// Client disconnected
-		delete_network(net);
-	}	
+	}
 }

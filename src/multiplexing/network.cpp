@@ -11,6 +11,14 @@ Network::Network()
 
 }
 
+Network::Network()
+{
+  addr_size = sizeof(address);
+  rcved = 0;
+  header = true;
+  is_read = false;
+}
+
 Network::~Network()
 {}
 
@@ -26,25 +34,14 @@ void Network::set_socket_fd(int fd)
 
 void Network::set_address(struct sockaddr_storage &address)
 {
-  address = address;
+  this->address = address;
 }
 
-bool Network::handle_post(Network *net)
+
+bool Network::handle_post(Network *c)
 {
-  Response response;
-  if (!response.post_err(net))
-  {
-    response.send_err(net->get_socket_fd(), 404);
-    net->is_done = true;
-    return 0;
-  }
-  handle_err();
-  if (net->request.is_err)
-  {
-    response.send_err(socket_fd, net->request.is_err);
-    net->is_done = true;
-    return (0);
-  }
+  (void)* c;
+  //respons
   return(1);
 }
 
@@ -66,11 +63,23 @@ void Network::handle_req(const char *req_body, size_t size)
     ext = url.substr(url.find_last_of(NO9TA) + WA7ED);
     if (request.get_met() == "POST" and handle_post(this) and cnf->serverConfigs[request.srv_index].locations[request.location_index].cgiPath[ext].empty())
     {
+
       if (!request.is_err)
         request.handle_body(body);
       header = false;
     }
+        std::cout << "end" << std::endl;
   }
   else if (request.get_met() == "POST" and handle_post(this) and !request.is_err and cnf->serverConfigs[request.srv_index].locations[request.location_index].cgiPath[ext].empty())
     request.handle_body(str);
+}
+
+Response* Network::get_respo()
+{
+  return (&_respo);
+}
+
+Request* Network::get_request()
+{
+  return (&request);
 }
