@@ -50,9 +50,9 @@ void Network::handle_req(const char *req_body, size_t size)
     request.handle_headers(str_header);
     url = request.get_loc();
     ext = url.substr(url.find_last_of(NO9TA) + WA7ED);
+    std::cout << request.srv_index << std::endl;
     if (request.get_met() == "POST" and handle_post(this) and cnf->serverConfigs[request.srv_index].locations[request.location_index].cgiPath[ext].empty())
     {
-
       if (!request.is_err)
         request.handle_body(body);
       header = false;

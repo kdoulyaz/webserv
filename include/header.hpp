@@ -61,4 +61,7 @@ class	Response;
 #define CONTENT "Content-Type"
 #define MSG_BUFF 40000 
 #define HEAD	"HEAD"
+
+int _stoi(std::string str);
+
 #endif
