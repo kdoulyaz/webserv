@@ -1,4 +1,3 @@
-
 #ifndef CONFIGUE_HPP
 #define CONFIGUE_HPP
 #include "header.hpp"
@@ -20,6 +19,7 @@ class ServerConfig
       std::vector<std::string> index;
       std::map<std::string, std::string> cgiPath;
       std::vector<std::string> locationConfig;
+      std::string path_;
       std::string getPath() const;
     };
 
@@ -33,6 +33,9 @@ class ServerConfig
       std::vector<std::string> serverName;
       std::vector<LocationConfig> locations;
       const std::vector<LocationConfig>::iterator getLocationKey(std::string key);
+     std::string get_maxBodysize(){
+      return (maxBodySize);
+    }
     };
 
     std::vector<Server> serverConfigs;

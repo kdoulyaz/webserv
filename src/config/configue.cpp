@@ -2,6 +2,7 @@
 
 ServerConfig::ServerConfig()
 {
+    initErrPages();
 }
 
 ServerConfig::~ServerConfig()
@@ -33,46 +34,6 @@ void ServerConfig::initErrPages()
         errorPage[505] = "";
     }
 }
-
-
-// void ServerConfig::parseServerConfigLine(std::string& line)
-// {
-//     std::vector<std::string> tokens;
-//     std::stringstream ss(line);
-//     std::string token;
-
-//     while (std::getline(ss, token, ' '))
-//     {
-//         if (!token.empty())
-//             tokens.push_back(token);
-//     }
-
-//     if (tokens[0] == "host:")
-//         serverConfigs.back().host = tokens[1];
-//     else if (tokens[0] == "port:")
-//         serverConfigs.back().port = tokens[1];
-//     else if (tokens[0] == "max_body_size:")
-//         serverConfigs.back().maxBodySize = tokens[1];
-//     else if (tokens[0] == "server_name:"){
-//         for (size_t i = 1; i < tokens.size(); i++)
-//             serverConfigs.back().serverName.push_back(tokens[i]);
-//     }
-//     else if (tokens[0] == "error_page"){
-//         for (size_t i = 1; i < tokens.size(); i++)
-//         {
-//             if (tokens[i] == "400:")
-//                 serverConfigs.back().errorPage400[tokens[i]] = tokens[i + 1];
-//             else if (tokens[i] == "404:")
-//                 serverConfigs.back().errorPage404[tokens[i]] = tokens[i + 1];
-//         }
-//     }
-//     else if (tokens.size() == 3 && tokens[0] == "server_name:"){
-//         for (size_t i = 1; i < tokens.size(); i++)
-//             serverConfigs.back().serverName.push_back(tokens[i]);
-//     }
-//     else
-//         return ;
-// }
 
 void ServerConfig::parseServerConfigLine(std::string& line)
 {
@@ -178,9 +139,22 @@ ServerConfig::ServerConfig(std::string filename)
                 i =1;
                 continue;
             }
-            else if (line.find("location /") != std::string::npos){
+            else if (line.find("location ") != std::string::npos)
+            {
                 serverConfigs.back().locations.push_back(LocationConfig());
-                i =2;
+                size_t startPos = line.find("location ") + strlen("location ");
+                std::string parsedWord;
+
+                for (size_t i = startPos; i < line.length(); ++i)
+                {
+                    if (line[i] == ' ' || line[i] == '{')
+                    {
+                        break;
+                    }
+                    parsedWord += line[i];
+                }
+                serverConfigs.back().locations.back().path_ = parsedWord;
+                i = 2;
                 continue;
             }
             if (serverConfigs.empty())
@@ -219,5 +193,5 @@ const std::vector<ServerConfig::LocationConfig>::iterator ServerConfig::Server::
 
 std::string ServerConfig::LocationConfig::getPath() const
 {
-    return root;
+    return path_;
 }

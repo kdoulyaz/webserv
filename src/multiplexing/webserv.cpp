@@ -72,12 +72,20 @@ void Webserv::delete_network(const int &s)
   maxfd_sock = maxtmp;
 }
 
+void  Webserv::setIndx(int i)
+{
+  this->indx = i;
+}
+
 void Webserv::buildResponse(Network &net)
 {
   Response &rsp_ = *net.get_respo();
   Request &req_ = *net.get_request();
+  req_.srv_index = indx;
+  req_.location_index = 0;
   ServerConfig::Server &srv_ = cnf->serverConfigs[req_.srv_index];
   // ServerConfig::LocationConfig &loc_ = srv_.locations[req_.location_index];
+
   if (req_.is_err || rsp_.BuildBody(req_))
     rsp_.SrvErrPages(srv_, rsp_.get_sCode(), rsp_.getStatusMsg().c_str());
   if (rsp_.get_Cgi())
@@ -107,11 +115,11 @@ void Webserv::sendRespo(Network &c)
   size_t byts_sent = 0;
   Response &rsp_ = *c.get_respo();
   std::string response = rsp_.get_Content();
-  std::cerr << "{" <<response << "}"<<std::endl;
+  std::cerr << "{" << response.length() << "}" << byts_sent <<std::endl;
   if (response.length() >= MSG_BUFF && response.length() > 0)
-    byts_sent = write(sock_fd, response.c_str(), MSG_BUFF);
+    byts_sent = write(c.get_socket_fd(), response.c_str(), MSG_BUFF);
   else
-    byts_sent = write(sock_fd, response.c_str(), response.length());
+    byts_sent = write(c.get_socket_fd(), response.c_str(), response.length());
   if (byts_sent < 0)
     std::cerr << "here coldnt wrtie to server" << std::endl;
   else if (byts_sent == 0 || byts_sent == response.length())
@@ -126,3 +134,19 @@ void Webserv::sendRespo(Network &c)
     }
   }
 }
+
+int _stoi(std::string str)
+{
+    std::stringstream ss(str);
+    if (str.length() > 10)
+        throw std::exception();
+    for (size_t i = 0; i < str.length(); ++i)
+    {
+        if(!isdigit(str[i]))
+            throw std::exception();
+    }
+    int res;
+    ss >> res;
+    return (res);
+}
+

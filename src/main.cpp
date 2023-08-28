@@ -25,6 +25,7 @@ int main(int argc, char **argv)
       srv = new Webserv(cnf->serverConfigs[i].port, cnf->serverConfigs[i].host);
       srv->setuping();
       servers.push_back(srv);
+      srv->setIndx(i);
     }
     while(1337) {
       for(size_t i = 0; i < servers.size(); i++)

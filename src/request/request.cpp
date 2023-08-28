@@ -1,6 +1,6 @@
 #include "header.hpp"
 
-Request::Request() : chunk_size(0), first_body(true), rcv_size(0),finished(false), is_err(0), req_size(0)
+Request::Request() : chunk_size(0), first_body(true), rcv_size(0),finished(false), is_err(0), req_size(0),srv_index(0), location_index(0), max_body_size(0)
 {
   if (map.empty())
   {
@@ -217,4 +217,4 @@ bool Request::connection_status()
       return (false);
   }
   return (true);
-}
+  }
