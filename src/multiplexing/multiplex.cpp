@@ -70,12 +70,13 @@ void Webserv::multiplexing(Network *net, struct timeval &t)
 					net->is_read = true;
 				else
 					net->handle_req(buff, bytes);
-					//std::cout << "heeererrr" << std::endl;
+				if (net->is_read == 1)
+				{
+					// std::cout << "heeererrr" << std::endl;
 					buildResponse(*net);
-					// // std::cout << "and " << cnf->serverConfigs[0].locations[0].root << "  heee111reeee" << std::endl;
-					// FD_CLR(fd_sock, &fdread);
-					// FD_SET(fd_sock, &fdwrite);
-				
+					FD_CLR(fd_sock, &fdread);
+					FD_SET(fd_sock, &fdwrite);
+				}
 			}
 			if (FD_ISSET(fd_sock, &fdwrite))
 			{
@@ -87,7 +88,7 @@ void Webserv::multiplexing(Network *net, struct timeval &t)
 					// 					   "Hello, world!";
 					// send(net->get_socket_fd(), response.c_str(), response.size(), 0);
 					// FD_CLR(fd_sock, &fdread);
-					FD_CLR(fd_sock, &fdwrite);
+					// FD_CLR(fd_sock, &fdwrite);
 			}
 			else
 			{

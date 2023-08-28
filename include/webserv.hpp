@@ -20,7 +20,7 @@ class Webserv
     fd_set fderror;
     std::string port;
     std::string host;
-    int indx;
+
   public:
 
     Webserv();
@@ -33,8 +33,6 @@ class Webserv
     void  buildResponse(Network &);
     void  multiplexing(Network *net, struct timeval &t);
     void  init_fdbit();
-    void  setIndx(int );
 };
-
 
 #endif

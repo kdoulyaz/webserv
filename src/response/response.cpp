@@ -152,7 +152,7 @@ void Response::SrvErrPages(const ServerConfig::Server &srv_, const short &status
     setResponseHeader(status_, tmp);
     if (it == srv_.errorPage.end())
     {
-        respo_body = getErrPage(_scode);
+        respo_body = getErrPage(500);
     }
 }
 
@@ -226,7 +226,7 @@ int Response::BuildHtmlIndx()
         dirListPage.append("<td>" + std::string(ctime(&file_stat.st_mtime)) + "</td>\n");
         dirListPage.append("<td>");
         if (!S_ISDIR(file_stat.st_mode))
-            dirListPage.append(toString(file_stat.st_size));
+            dirListPage.append(std::to_string(file_stat.st_size));
         dirListPage.append("</td>\n");
         dirListPage.append("</tr>\n");
     }
@@ -269,6 +269,7 @@ std::string Response::_sCodeStr(short _sCode)
 int Response::readFile()
 {
     std::ifstream file(_target.c_str());
+
     if (file.fail())
     {
         _scode = 404;
@@ -300,7 +301,7 @@ void Response::BuildErrPage(Request &req_)
                 location_header.insert(location_header.begin(), '/');
             _scode = 300;
         }
-        _target = loc_.getPath() + srv_.errorPage[_scode];
+        _target = loc_.root + srv_.errorPage[_scode];
         short _old_scode = _scode;
         if (readFile())
         {
@@ -369,16 +370,14 @@ static void LocationMatch(std::string pth, std::vector<ServerConfig::LocationCon
 
     for (std::vector<ServerConfig::LocationConfig>::const_iterator it = loc.begin(); it != loc.end(); ++it)
     {
-       
-        if (pth.find(it->getPath()) == 0)
+        if (pth.find(it->root) == 0)
         {
-            std::cout <<"it:::" << it->getPath() <<std::endl;
-            if (it->getPath() == "/" || pth.length() == it->getPath().length() || pth[it->getPath().length()] == '/')
+            if (it->root == "/" || pth.length() == it->root.length() || pth[it->root.length()] == '/')
             {
-                if (it->getPath().length() > match)
+                if (it->root.length() > match)
                 {
-                    match = it->getPath().length();
-                    key = it->getPath();
+                    match = it->root.length();
+                    key = it->root;
                 }
             }
         }
@@ -420,26 +419,171 @@ static bool valid_Ret(const ServerConfig::LocationConfig &loc, short &code, std:
     return false;
 }
 
+// srv_target() "int Response::srv_target(Request &req)
+// {
+//     std::string location_key;
+//     ServerConfig::Server &_server = cnf->serverConfigs[req.srv_index];
+
+//     if (!location_key.empty())
+//     {
+//         ServerConfig::LocationConfig target_location = *_server.getLocationKey(location_key);
+
+//         if (is_Method(req.get_met(), target_location, _scode))
+//         {
+//             std::cout << "METHOD NOT ALLOWED \n";
+//             return (1);
+//         }
+
+//         if (req.get_body().length() > std::stoul(_server.maxBodySize))
+//         {
+//             _scode = 413;
+//             return (1);
+//         }
+
+//         if (valid_Ret(target_location, _scode, location_header))
+//             return (1);
+
+//         // if (target_location.getPath().find("cgi-bin") != std::string::npos)
+//         // {
+//         //     // Placeholder for CGI handling
+//         //     // return (handleCgi(location_key));
+//         // }
+
+//         // if (!target_location.root.empty())
+//         // {
+//         //     // Replace alias logic or any other required processing
+//         // }
+//         // else
+//         // {
+//         //     // Append root logic or any other required processing
+//         // }
+
+//         // if (!target_location.cgiPath.empty())
+//         // {
+//         //     // Check for CGI extension and handle accordingly
+//         // }
+
+//         if (isDir(_target))
+//         {
+//             if (_target.back() != '/')
+//             {
+//                 _scode = 301;
+//                 location_header = req.get_loc() + "/";
+//                 return (1);
+//             }
+
+//             if (!target_location.index.empty())
+//                 _target += target_location.index[0];
+//             else
+//                 _target += _server.locations[req.location_index].index[0];
+
+//             if (!fileExists(_target))
+//             {
+//                 if (target_location.autoindex == "on")
+//                 {
+//                     _target.erase(_target.find_last_of('/') + 1);
+//                     aut_indx_flag = true;
+//                     return (0);
+//                 }
+//                 else
+//                 {
+//                     _scode = 403;
+//                     return (1);
+//                 }
+//             }
+
+//             if (isDir(_target))
+//             {
+//                 _scode = 301;
+//                 if (!target_location.index.empty())
+//                     location_header = comb_Paths(req.get_loc(), target_location.index[0], "");
+//                 else
+//                     location_header = comb_Paths(req.get_loc(), _server.locations[req.srv_index].index[0], "");
+//                 if (location_header.back() != '/')
+//                     location_header.push_back('/');
+
+//                 return (1);
+//             }
+//         }
+//     }
+//     else
+//     {
+//         _target = comb_Paths(_server.locations[req.location_index].root, req.get_loc(), "");
+//         if (isDir(_target))
+//         {
+//             if (_target.back() != '/')
+//             {
+//                 _scode = 301;
+//                 location_header = req.get_loc() + "/";
+//                 return (1);
+//             }
+//             _target += _server.locations[req.srv_index].index[0];
+//             if (!fileExists(_target))
+//             {
+//                 _scode = 403;
+//                 return (1);
+//             }
+//             if (isDir(_target))
+//             {
+//                 _scode = 301;
+//                 location_header = comb_Paths(req.get_loc(), _server.locations[req.srv_index].index[0], "");
+//                 if (location_header.back() != '/')
+//                     location_header.push_back('/');
+//                 return (1);
+//             }
+//         }
+//     }
+//     return (0);
+// }
+
+// int Response::BuildBody(Request &req)
+// {
+//     ServerConfig::Server &srv = cnf->serverConfigs[req.srv_index];
+//     // ServerConfig::LocationConfig &loc = srv.locations[req.location_index];
+
+//     try
+//     {
+//         if (req.get_body().length() > std::stoi(srv.maxBodySize))
+//         {
+//             _scode = 413;
+//             return (1);
+//         }
+//     }
+//     catch(const std::exception& e)
+//     {
+//         std::cerr << e.what() << '\n';
+//     }
+
+//     if (srv_target(req))
+//         return (1);
+//     return 1;
+// }
+
 int Response::srv_target(Request &req)
 {
     std::string location_key;
-    ServerConfig::Server &_server = cnf->serverConfigs[0];
+    ServerConfig::Server &_server = cnf->serverConfigs[req.srv_index];
+
     LocationMatch(req.get_loc(), _server.locations, location_key);
-    
-    if (location_key.length() > 0)
+
+    if (location_key.empty())
+        _target = comb_Paths(_server.locations[req.location_index].root, req.get_loc(), "");
+    else
     {
         ServerConfig::LocationConfig target_location = *_server.getLocationKey(location_key);
-        
+
         if (is_Method(req.get_met(), target_location, _scode))
         {
             std::cout << "METHOD NOT ALLOWED \n";
             return (1);
         }
-        if (req.get_body().length() > 300000)
+
+        if (req.get_body().length() > std::stoul(_server.maxBodySize))
         {
             _scode = 413;
             return (1);
         }
+
         if (valid_Ret(target_location, _scode, location_header))
             return (1);
         // if (target_location.getPath().find("cgi-bin") != std::string::npos)
@@ -448,14 +592,14 @@ int Response::srv_target(Request &req)
         //     // return (handleCgi(location_key));
         // }
 
-        if (0)
-        {
-            // Replace alias logic or any other required processing
-        }
-        else
-        {
-            _target = comb_Paths(_server.locations[0].root ,req.get_loc(), "");
-        }
+        // if (!target_location.root.empty())
+        // {
+        //     // Replace alias logic or any other required processing
+        // }
+        // else
+        // {
+        //     // Append root logic or any other required processing
+        // }
 
         // if (!target_location.cgiPath.empty())
         // {
@@ -534,26 +678,24 @@ int Response::BuildBody(Request &req)
     ServerConfig::Server &srv = cnf->serverConfigs[req.srv_index];
     // ServerConfig::LocationConfig &loc = srv.locations[req.location_index];
 
-    if (req.get_body().length() > static_cast<size_t>(_stoi(srv.maxBodySize)))
+    if (req.get_body().length() > static_cast<size_t>(std::stoi(srv.maxBodySize)))
     {
         _scode = 413;
         return (1);
     }
+    // std::cout << "heee111reeee" << std::endl;
     if (srv_target(req))
         return (1);
     if (cgi_flag || aut_indx_flag)
         return (0);
     if (req.get_met() == GET)
     {
-          if (readFile())
-    {
-                  return (1);
-           }
-        std::cout << "hereererererererererererererere" << std::endl; 
+        if (readFile())
+            return (1);
     }
     else if (req.get_met() == POST)
     {
-        std::cout << "handle post i guess" << std::endl;
+        // handle post i guess
     }
     else if (req.get_met() == DELETE)
     {
