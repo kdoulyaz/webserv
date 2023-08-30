@@ -274,7 +274,7 @@ int Response::readFile()
         _scode = 404;
         return 1;
     }
-
+    
     std::ostringstream ss;
     ss << file.rdbuf();
     respo_body = ss.str();
@@ -435,7 +435,7 @@ int Response::srv_target(Request &req)
             std::cout << "METHOD NOT ALLOWED \n";
             return (1);
         }
-        if (req.get_body().length() > 300000)
+        if (req.get_body().length() > _server.maxBodySize)
         {
             _scode = 413;
             return (1);
@@ -454,7 +454,7 @@ int Response::srv_target(Request &req)
         }
         else
         {
-            _target = comb_Paths(_server.locations[0].root ,req.get_loc(), "");
+            _target = comb_Paths(_server.super_root ,req.get_loc(), "");
         }
 
         // if (!target_location.cgiPath.empty())
@@ -470,36 +470,13 @@ int Response::srv_target(Request &req)
                 return (1);
             }
 
-            if (!target_location.index.empty())
-            {
-                bool indexFound = false;
-                for (std::vector<std::string>::const_iterator it = target_location.index.begin(); it != target_location.index.end(); ++it)
-                {
-                    std::string potentialIndexPath = comb_Paths(_target, *it, "");
-                    if (fileExists(potentialIndexPath))
-                    {
-                        _target = potentialIndexPath;
-                        indexFound = true;
-                        break;
-                    }
-                }
-
-                if (!indexFound)
-                {
-                    if (target_location.autoindex == "on")
-                    {
-                        _target.erase(_target.find_last_of('/') + 1);
-                        aut_indx_flag = true;
-                        return (0);
-                    }
-                    else
-                    {
-                        _scode = 403;
-                        return (1);
-                    }
-                }
+            if (!target_location.loc_index.empty()){
+               _target += target_location.getLocIndx();
             }
-
+            else {
+                _target += _server.srv_index;
+                // std::cout << _server.srv_index  << ":::::::::::::::::::"<< std::endl;
+            }
             if (!fileExists(_target))
             {
                 if (target_location.autoindex == "on")
@@ -518,7 +495,7 @@ int Response::srv_target(Request &req)
             if (isDir(_target))
             {
                 _scode = 301;
-                location_header = comb_Paths(req.get_loc(), target_location.index[0], "");
+                location_header = comb_Paths(req.get_loc(), target_location.loc_index, "");
                 if (location_header.back() != '/')
                     location_header.push_back('/');
 
@@ -534,7 +511,7 @@ int Response::BuildBody(Request &req)
     ServerConfig::Server &srv = cnf->serverConfigs[req.srv_index];
     // ServerConfig::LocationConfig &loc = srv.locations[req.location_index];
 
-    if (req.get_body().length() > static_cast<size_t>(_stoi(srv.maxBodySize)))
+    if (req.get_body().length() > (srv.maxBodySize))
     {
         _scode = 413;
         return (1);
@@ -545,11 +522,8 @@ int Response::BuildBody(Request &req)
         return (0);
     if (req.get_met() == GET)
     {
-          if (readFile())
-    {
-                  return (1);
-           }
-        std::cout << "hereererererererererererererere" << std::endl; 
+    if (readFile())
+        return (1);
     }
     else if (req.get_met() == POST)
     {

@@ -16,26 +16,25 @@ class ServerConfig
       std::string uploadPath;
       std::string return_;
       std::vector<std::string> methods;
-      std::vector<std::string> index;
+      std::string loc_index;
       std::map<std::string, std::string> cgiPath;
       std::vector<std::string> locationConfig;
       std::string path_;
       std::string getPath() const;
+      std::string getLocIndx() const;
     };
 
     struct Server
     {
       std::string host;
       std::string port;
-      std::string maxBodySize;
+      std::string super_root;
+      unsigned long maxBodySize;
+      std::string srv_index;
       std::map<short, std::string> errorPage;
-    //  std::map<std::string, std::string> errorPage404;
       std::vector<std::string> serverName;
       std::vector<LocationConfig> locations;
       const std::vector<LocationConfig>::iterator getLocationKey(std::string key);
-     std::string get_maxBodysize(){
-      return (maxBodySize);
-    }
     };
 
     std::vector<Server> serverConfigs;

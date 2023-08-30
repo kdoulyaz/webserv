@@ -40,6 +40,7 @@ void ServerConfig::parseServerConfigLine(std::string& line)
     std::vector<std::string> tokens;
     std::stringstream ss(line);
     std::string token;
+    char *end = 0;
 
     while (std::getline(ss, token, ' '))
     {
@@ -51,8 +52,17 @@ void ServerConfig::parseServerConfigLine(std::string& line)
         serverConfigs.back().host = tokens[1];
     else if (tokens[0] == "port:")
         serverConfigs.back().port = tokens[1];
-    else if (tokens[0] == "max_body_size:")
-        serverConfigs.back().maxBodySize = tokens[1];
+    else if (tokens[0] == "root")
+        serverConfigs.back().super_root = tokens[1];
+    else if (tokens[0] == "index")
+        serverConfigs.back().srv_index = tokens[1];
+    else if (tokens[0] == "max_body_size:" && token[1])
+    {
+        serverConfigs.back().maxBodySize = strtoul(tokens[1].c_str(),&end, 10);
+        if (end != '\0'){
+            return ; //should handel errros  in  this file 
+        }
+    }
     else if (tokens[0] == "server_name:")
     {
         for (size_t i = 1; i < tokens.size(); i++)
@@ -95,10 +105,7 @@ void ServerConfig::parseLocationConfigLine(std::string& line)
         serverConfigs.back().locations.back().root = tokens[1];
     else if (tokens[0] == "index:")
     {
-        for (size_t i = 1; i < tokens.size(); i++)
-        {
-            serverConfigs.back().locations.back().index.push_back(tokens[i]);
-        }
+        serverConfigs.back().locations.back().loc_index = tokens[1];
     }
     else if (tokens[0] == "autoindex:")
         serverConfigs.back().locations.back().autoindex = tokens[1];
@@ -194,4 +201,9 @@ const std::vector<ServerConfig::LocationConfig>::iterator ServerConfig::Server::
 std::string ServerConfig::LocationConfig::getPath() const
 {
     return path_;
+}
+
+std::string ServerConfig::LocationConfig::getLocIndx() const
+{
+    return loc_index;
 }
