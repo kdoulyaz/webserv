@@ -372,7 +372,7 @@ static void LocationMatch(std::string pth, std::vector<ServerConfig::LocationCon
        
         if (pth.find(it->getPath()) == 0)
         {
-            std::cout <<"it:::" << it->getPath() <<std::endl;
+            // std::cout <<"it:::" << it->getPath() <<std::endl;
             if (it->getPath() == "/" || pth.length() == it->getPath().length() || pth[it->getPath().length()] == '/')
             {
                 if (it->getPath().length() > match)
@@ -425,7 +425,6 @@ int Response::srv_target(Request &req)
     std::string location_key;
     ServerConfig::Server &_server = cnf->serverConfigs[0];
     LocationMatch(req.get_loc(), _server.locations, location_key);
-    
     if (location_key.length() > 0)
     {
         ServerConfig::LocationConfig target_location = *_server.getLocationKey(location_key);
@@ -442,21 +441,21 @@ int Response::srv_target(Request &req)
         }
         if (valid_Ret(target_location, _scode, location_header))
             return (1);
-        // if (target_location.getPath().find("cgi-bin") != std::string::npos)
-        // {
+        if (target_location.getPath().find("cgi-bin") != std::string::npos)
+        {
         //     // Placeholder for CGI handling
         //     // return (handleCgi(location_key));
-        // }
+        }
 
-        if (0)
+        if (!target_location.root.empty())
         {
+            _target = comb_Paths(target_location.root,req.get_loc(), "");
             // Replace alias logic or any other required processing
         }
         else
         {
             _target = comb_Paths(_server.super_root ,req.get_loc(), "");
         }
-
         // if (!target_location.cgiPath.empty())
         // {
         //     // Check for CGI extension and handle accordingly

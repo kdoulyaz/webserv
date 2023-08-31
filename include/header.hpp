@@ -59,7 +59,7 @@ class	Response;
 #define GET "GET"
 #define DELETE "DELETE"
 #define CONTENT "Content-Type"
-#define MSG_BUFF 40000 
+#define MSG_BUFF 400000 
 #define HEAD	"HEAD"
 
 int _stoi(std::string str);

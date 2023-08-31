@@ -116,9 +116,9 @@ void Webserv::sendRespo(Network &c)
   Response &rsp_ = *c.get_respo();
   std::string response = rsp_.get_Content();
   std::cerr << "{" << response.length() << "}" << byts_sent <<std::endl;
-  if (response.length() >= MSG_BUFF && response.length() > 0)
-    byts_sent = write(c.get_socket_fd(), response.c_str(), MSG_BUFF);
-  else
+  // if (response.length() >= MSG_BUFF)
+  //   byts_sent = write(c.get_socket_fd(), response.c_str(), MSG_BUFF);
+  // else
     byts_sent = write(c.get_socket_fd(), response.c_str(), response.length());
   if (byts_sent < 0)
     std::cerr << "here coldnt wrtie to server" << std::endl;

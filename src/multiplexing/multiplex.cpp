@@ -35,15 +35,32 @@ void Webserv::setuping()
 void Webserv::init_fdbit()
 {
   FD_ZERO(&this->fdread);
-  FD_SET(this->sock_fd, &this->fdread);
   FD_ZERO(&this->fdwrite);
+
+  FD_SET(this->sock_fd, &this->fdread);
   FD_SET(this->sock_fd, &this->fdwrite);
-	for (size_t i = 0; i < this->nets.size(); i++)
-	{
-		FD_SET(this->nets[i]->get_socket_fd(), &this->fdread);
-    	FD_SET(this->nets[i]->get_socket_fd(), &this->fdwrite);
-	}
+
+  for (size_t i = 0; i < this->nets.size(); i++)
+  {
+    int socket_fd = this->nets[i]->get_socket_fd();
+    FD_SET(socket_fd, &this->fdread);
+    FD_SET(socket_fd, &this->fdwrite);
+  }
 }
+
+// void Webserv::init_fdbit()
+// {
+//   FD_ZERO(&this->fdread);
+//   FD_ZERO(&this->fdwrite);
+ 
+//   FD_SET(this->sock_fd, &this->fdread);
+//   FD_SET(this->sock_fd, &this->fdwrite);
+// 	for (size_t i = 0; i < this->nets.size(); i++)
+// 	{
+// 		FD_SET(this->nets[i]->get_socket_fd(), &this->fdread);
+//     	FD_SET(this->nets[i]->get_socket_fd(), &this->fdwrite);
+// 	}
+// }
 
 void Webserv::multiplexing(Network *net, struct timeval &t)
 {
@@ -73,9 +90,9 @@ void Webserv::multiplexing(Network *net, struct timeval &t)
 					//std::cout << "heeererrr" << std::endl;
 					buildResponse(*net);
 					// // std::cout << "and " << cnf->serverConfigs[0].locations[0].root << "  heee111reeee" << std::endl;
-					// FD_CLR(fd_sock, &fdread);
-					// FD_SET(fd_sock, &fdwrite);
-				
+					FD_CLR(fd_sock, &fdread);
+					FD_SET(fd_sock, &fdwrite);
+					std::memset(buff, 0,sizeof(buff));
 			}
 			if (FD_ISSET(fd_sock, &fdwrite))
 			{
