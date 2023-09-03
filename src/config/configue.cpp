@@ -56,7 +56,8 @@ void ServerConfig::parseServerConfigLine(std::string& line)
         serverConfigs.back().port = tokens[1];
     else if (tokens[0] == "max_body_size:")
         serverConfigs.back().maxBodySize = tokens[1];
-    else if (tokens[0] == "server_name:"){
+    else if (tokens[0] == "server_name:")
+    {
         for (size_t i = 1; i < tokens.size(); i++)
             serverConfigs.back().serverName.push_back(tokens[i]);
     }
@@ -68,13 +69,15 @@ void ServerConfig::parseServerConfigLine(std::string& line)
             serverConfigs.back().errorPage[errorCode] = tokens[i + 1];
         }
     }
-    else if (tokens.size() == 3 && tokens[0] == "server_name:"){
+    else if (tokens.size() == 3 && tokens[0] == "server_name:")
+    {
         for (size_t i = 1; i < tokens.size(); i++)
             serverConfigs.back().serverName.push_back(tokens[i]);
     }
     else
-        return ;
+        return;
 }
+
 
 void ServerConfig::parseLocationConfigLine(std::string& line)
 {
@@ -155,4 +158,21 @@ ServerConfig::ServerConfig(std::string filename)
         exit(1);
     }
 
+}
+
+const std::vector<ServerConfig::LocationConfig>::iterator ServerConfig::Server::getLocationKey(std::string key)
+{
+    std::vector<LocationConfig>::iterator it;
+    for (it = locations.begin(); it != locations.end(); it++)
+    {
+        if (it->getPath() == key)
+            return it;
+    }
+    std::cerr << "Error: path to location not found[" << key << "]" << std::endl;
+    return locations.end();
+}
+
+std::string ServerConfig::LocationConfig::getPath() const
+{
+    return root;
 }

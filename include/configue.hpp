@@ -30,6 +30,7 @@ class ServerConfig
       std::map<short, std::string> errorPage;
       std::vector<std::string> serverName;
       std::vector<LocationConfig> locations;
+      const std::vector<LocationConfig>::iterator getLocationKey(std::string key);
     } Server;
 
     std::vector<Server> serverConfigs;
@@ -38,6 +39,7 @@ class ServerConfig
     ~ServerConfig();
     void initErrPages();
     ServerConfig(std::string filename);
+    void  initErrPages(void);
 };
 #endif
 

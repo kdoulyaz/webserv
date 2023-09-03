@@ -29,6 +29,9 @@ class Webserv
     Network *get_network(int s);
     void  add_network();
     void  delete_network(Network *net);
+    void  delete_network(const int &s);
+    void  sendRespo(Network &);
+    void  buildResponse(Network &);
     void  multiplexing(Network *net, struct timeval &t);
     void  init_fdbit();
 };

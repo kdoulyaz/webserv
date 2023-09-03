@@ -6,8 +6,26 @@ CLIENT = client
 
 all: $(NAME)
 
-$(NAME): $(SRC)
-	@$(CPP) $(CFLAGS) $(SRC) -o $(NAME) 
+SRCS := $(shell find $(SRCS_DIR) -type f -name "*.cpp")
+
+# Convert source file paths to object file names in the obj directory
+OBJS = $(patsubst $(shell find $(SRCS_DIR) -type f -name "*.cpp") \
+/%.cpp, $(OBJS_DIR)/%.o, $(SRCS))
+
+# Find subdirectories in the source directory
+SUBDIRS := $(shell find $(SRCS_DIR) -type d)
+
+$(NAME): $(OBJS_DIR) $(OBJS)
+	@$(CPP) $(CFLAGS) $(OBJS) -o $(NAME)
+	@$(PRINTF) "\r%100s\r$(BLUE)$(NAME) is up to date!$(DEFAULT)\n"
+
+$(OBJS_DIR):
+	@mkdir -p $(OBJS_DIR)
+	@$(foreach dir,$(SUBDIRS),mkdir -p $(patsubst $(SRCS_DIR)/%,$(OBJS_DIR)/%,$(dir));)
+
+$(OBJS_DIR)/%.o : $(SRCS_DIR)/%.cpp 
+	@$(CPP) $(CFLAGS) -c $< -o $@
+	@$(PRINTF) "\rCompiling $(BLUE)$<$(DEFAULT)..."
 
 clean:
 
@@ -17,12 +35,6 @@ fclean : clean
 
 
 re : fclean all
+		@clear
 
-client: client.cpp
-	@$(CPP) $(CFLAGS) client.cpp -o client
-
-run: 
-	./server config/config_file.conf 
-
-
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re 

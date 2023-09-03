@@ -28,6 +28,7 @@
 #include <ctime>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include "ContentType.hpp"
 #include "configue.hpp"
 #include "ContentType.hpp"
 #include "network.hpp"
@@ -36,8 +37,15 @@
 
 extern ServerConfig *cnf;
 
+#include "webserv.hpp"
 
-#define SLISTEN true
+extern ServerConfig *cnf;
+class	ContentType;
+class   Network;
+class   Webserv;
+class	Request;
+class	Response;
+
 
 #define PORT "8011"
 #define BACK_LOG 1024
@@ -47,6 +55,7 @@ extern ServerConfig *cnf;
 #define WA7ED 1
 #define NO9TA "."
 #define SLASH "/"
+#define WALO ""
 #define ZERO 0
 #define SEP "\r\n\r\n"
 #define LINE_SEP "\r\n"
@@ -61,4 +70,6 @@ extern ServerConfig *cnf;
 
 
 
+#define MSG_BUFF 40000 
+#define HEAD	"HEAD"
 #endif

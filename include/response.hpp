@@ -2,15 +2,24 @@
 #define RESPONSE_HPP
 
 #include "header.hpp"
-#include "configue.hpp"
-
-class ServerConfig;
-class Network;
+#include "ContentType.hpp"
 
 class Response
 {
     private:
-        /* data */
+        std::string _target;
+        std::vector<uint8_t> body_data;
+        size_t body_len;
+        std::string respo_body;
+        std::string location_header;
+        short _scode;
+        // char *raw_respo;
+        std::string statusMsg;
+        int cgi_flag;
+        int cgi_pipfd[2];
+        size_t cgi_respo_len;
+        bool aut_indx_flag;
+
     public:
         Response();
         ~Response();
