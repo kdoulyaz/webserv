@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include "configue.hpp"
+#include "ContentType.hpp"
 #include "network.hpp"
 #include "request.hpp"
 #include "response.hpp"
