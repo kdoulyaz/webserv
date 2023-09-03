@@ -12,7 +12,6 @@ Webserv::Webserv(std::string &port, std::string &host)
   hints.ai_flags = AI_PASSIVE;
   this->port = port;
   this->host = host;
-
   FD_ZERO(&net_fd);
 }
 

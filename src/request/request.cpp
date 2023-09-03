@@ -128,12 +128,7 @@ void Request::handle_body(std::string req_body)
   {
     file_name = cnf->serverConfigs[srv_index].locations[location_index].uploadPath 
           + SLASH + time + NO9TA + map[headers[CONTENT]];
-    file->open(file_name.c_str(), std::ios_base::app);
-
-    if (!file->is_open()) {
-        std::cout << "Error opening file!" << std::endl;
-        exit(1);
-    }
+    file = new std::ofstream(file_name.c_str(), std::ios_base::app);
   }
   if (req_size) {
     first_body = false;

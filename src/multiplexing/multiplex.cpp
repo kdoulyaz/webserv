@@ -7,7 +7,7 @@ void Webserv::setuping()
 	const int enb = WA7ED;
 
 	std::cout << "Getting address info..." << std::endl;
-	if ((ret = getaddrinfo(host.c_str(), port.c_str(), &hints, &records))){
+	if ((ret = getaddrinfo(0, port.c_str(), &hints, &records))){
 		std::cerr << gai_strerror(ret) << std::endl;
 		exit(1);
 	}
@@ -25,13 +25,19 @@ void Webserv::setuping()
 	}
 
 	std::cout << "Binding socket to local address..." << std::endl;
-	bind(sock_fd, records->ai_addr, records->ai_addrlen);
-	//if bind fail
+	if (bind(sock_fd, records->ai_addr, records->ai_addrlen))
+	{
+    	std::cerr << "bind: " << strerror(errno) << std::endl;
+    	exit(1);
+  	}
 	freeaddrinfo(records);
 
 	std::cout << "listening..." << std::endl;
-	listen(sock_fd, BACK_LOG);
-	// if listen fails
+	if (listen(sock_fd, BACK_LOG))
+	{
+    	std::cerr << "listen: " << strerror(errno) << std::endl;
+    	exit(1);
+  	}
   	FD_SET(sock_fd, &net_fd);
 }
 
@@ -50,8 +56,7 @@ void Webserv::init_fdbit()
 
 void Webserv::multiplexing(Network *net, struct timeval &t)
 {
-// Response respons;
-std::cout << maxfd_sock << std::endl;
+	Response respons;
 	init_fdbit();
 	if (select(maxfd_sock + WA7ED, &fdread, &fdwrite, NULL, &t) < ZERO){
 		std::cerr << "select: " << strerror(errno) << std::endl;
@@ -59,8 +64,12 @@ std::cout << maxfd_sock << std::endl;
 	}
 	for (int i = 3; i < maxfd_sock + WA7ED; i++){
 
-		if (i != sock_fd and !(net = get_network(i)))
-			continue;
+		if (i != sock_fd)
+		{
+			net = get_network(i);
+			if (!net)
+				continue;
+		}
 
 		if (FD_ISSET(i, &fdread)){ // reading data from clients when FD_ISSET(i, &fdread_copy) is true
 			if (i == sock_fd)
@@ -76,10 +85,8 @@ std::cout << maxfd_sock << std::endl;
 			}
 		}
 		else if (FD_ISSET(i, &fdwrite)){
-			// respons:  respons.handle_response(net);
-			std::cout << "end" << std::endl;
+			respons.handle_response(net);
 		}
-			// Client disconnected
-		delete_network(net);
+		delete_network(net);	// Client disconnected
 	}	
 }

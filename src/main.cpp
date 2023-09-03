@@ -18,8 +18,8 @@ int main(int argc, char **argv)
     Network *net = NULL;
     std::vector<Webserv *> servers;
     struct timeval t;
-    t.tv_sec = 1;
-    t.tv_usec = 10000;
+    t.tv_sec = 0;
+    t.tv_usec = 300;
     cnf = new ServerConfig(argv[1]);
     for(size_t i = 0; i < cnf->serverConfigs.size(); i++)
     {
@@ -31,8 +31,12 @@ int main(int argc, char **argv)
       for(size_t i = 0; i < servers.size(); i++)
         servers[i]->multiplexing(net, t);
     }
+    for(size_t i = 0; i < cnf->serverConfigs.size(); i++)
+    {
+      delete servers[i];
+    }
     delete cnf;
-    return (1);
+    return (0);
   }
   std::cout << "Webserv: ./webserv <config_file>" << std::endl;
   return (1);
