@@ -36,6 +36,7 @@ class ServerConfig
 
     ServerConfig();
     ~ServerConfig();
+    void initErrPages();
     ServerConfig(std::string filename);
 };
 #endif
