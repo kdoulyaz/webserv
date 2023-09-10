@@ -13,14 +13,6 @@ Network::Network()
 
 }
 
-Network::Network()
-{
-  addr_size = sizeof(address);
-  rcved = 0;
-  header = true;
-  is_read = false;
-}
-
 Network::~Network()
 {}
 
@@ -36,7 +28,7 @@ void Network::set_socket_fd(int fd)
 
 void Network::set_address(struct sockaddr_storage &address)
 {
-  this->address = address;
+  address = address;
 }
 std::string toLowerCase(const std::string& str) {
     std::string result = str;
@@ -146,6 +138,7 @@ void Response::send_err(int c_socket, int code)
 
     std::string response = it->second; // get the response from the map using the code as key
     send(c_socket, response.c_str(), response.length(), 0);
+  //  std::cout << "tessst __________________" << std::endl;
 }
 
 int Response::is_allowed_method(std::string method, std::vector<std::string> &methods)
@@ -355,9 +348,15 @@ int Response::post_err(Network *c)
     std::string ex;
 
     int index = check_which_server(c);
-    int l =  r.loc_matched(c->request.get_loc(), index, c);
     if (index == -1)
         index = 0;
+    int l =  r.loc_matched(c->request.get_loc(), index, c);
+    if (l == -1)
+    {
+        r.send_Get_response("404:", c);
+        c->is_done = true;
+        return 0;
+    }
     c->request.srv_index = index;
     c->request.location_index = l;
     ex = c->request.get_loc().substr(c->request.get_loc().find_last_of(".") + 1);
@@ -390,49 +389,57 @@ int Response::post_err(Network *c)
     return 1;
 }
 
-
-bool Network::handle_post(Network *c)
+bool Network::handle_post(Network *net)
 {
-  (void)* c;
-  //respons
+  Response response;
+  if (!response.post_err(net))
+  {
+    response.send_err(net->get_socket_fd(), 404);
+    net->is_done = true;
+    return 0;
+  }
+  handle_err();
+  if (net->request.is_err)
+  {
+    response.send_err(socket_fd, net->request.is_err);
+    net->is_done = true;
+    return (0);
+  }
   return(1);
 }
 
 void Network::handle_req(const char *req_body, size_t size)
 {
+
   std::string ext;
   std::string str_header;
   std::string body;
   std::string url;
   std::string str(req_body, size);
   int pos;
+  if (str[0] == '\r' && str[1] ==  '\n')
+  {
+    this->request.is_err = 501;
+    return;
+  }
   if (header)
   {
     pos = str.find(SEP);
     str_header = str.substr(0, pos);
-    body = str.substr(pos + 4);
+    if (pos+4<(int)str.size())
+        body = str.substr(pos + 4);
+    else
+        body = WALO;
     request.handle_headers(str_header);
     url = request.get_loc();
     ext = url.substr(url.find_last_of(NO9TA) + WA7ED);
     if (request.get_met() == "POST" and handle_post(this) and cnf->serverConfigs[request.srv_index].locations[request.location_index].cgiPath[ext].empty())
     {
-
       if (!request.is_err)
         request.handle_body(body);
       header = false;
     }
-        std::cout << "end" << std::endl;
   }
   else if (request.get_met() == "POST" and handle_post(this) and !request.is_err and cnf->serverConfigs[request.srv_index].locations[request.location_index].cgiPath[ext].empty())
     request.handle_body(str);
-}
-
-Response* Network::get_respo()
-{
-  return (&_respo);
-}
-
-Request* Network::get_request()
-{
-  return (&request);
 }

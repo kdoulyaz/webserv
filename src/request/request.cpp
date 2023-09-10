@@ -36,12 +36,11 @@ void Request::handle_req_l(std::string req_line)
   size_t pos = req_line.find(SPACE);
   if (pos != std::string::npos)
     met = req_line.substr(ZERO, pos);
-
   size_t new_pos = req_line.find(SPACE, pos + WA7ED);
   if (new_pos != std::string::npos)
     loc = req_line.substr(pos + WA7ED, new_pos - pos - WA7ED);
   else
-    loc = req_line.substr(pos + 1);
+    loc = req_line.substr(pos + WA7ED);
 }
 
 void Request::handle_headers(std::string header)
@@ -54,14 +53,11 @@ void Request::handle_headers(std::string header)
     size_t end_pos = header.find(LINE_SEP, pos);
     if (end_pos == std::string::npos)
       end_pos = header.length();
-
     size_t colon_pos = header.find(COLON, pos);
     if (colon_pos == std::string::npos)
       break;
-
     std::string key = header.substr(pos, colon_pos - pos);
     std::string value = header.substr(colon_pos + 2, end_pos - colon_pos - 2);
-
     headers[key] = value;
     pos = end_pos + 2;
   }
@@ -93,7 +89,6 @@ std::string Request::parse_chunked(std::string input)
         chunked.append(input.substr(0, chunk_size));
         input = input.substr(chunk_size, input.length() - chunk_size);
       }
-
       int start = 2;
       int pos = input.find("\r\n", start);
       if (pos == (int)std::string::npos)
@@ -105,7 +100,6 @@ std::string Request::parse_chunked(std::string input)
       std::string chunk_size_str = input.substr(start, pos - start);
       std::istringstream iss(chunk_size_str);
       iss >> std::hex >> chunk_size;
-      
       if (iss.fail())
       {
         is_err = 400;
@@ -117,20 +111,6 @@ std::string Request::parse_chunked(std::string input)
         break;
       }
       input = input.substr(pos + 2, (int)input.length() - pos - 2);
-      // {
-      //   chunk_size = std::stoi(chunk_size_str, nullptr, 16);
-      // }
-      // catch (std::exception &err)
-      // {
-      //   is_error = 400;
-      //   break;
-      // }
-      // if (chunk_size == 0)
-      // {
-      //   is_finished = true;
-      //   break;
-      // }
-      // input = input.substr(pos + 2, input.length() - pos - 2);
     }
   }
   return (chunked);
@@ -198,18 +178,4 @@ std::string Request::get_loc()
 std::map<std::string, std::string> Request::get_headers()
 {
   return headers;
-}
-
-std::string Request::get_body(){
-  return body;
-}
-
-bool Request::connection_status()
-{
-  if (map.count("connection"))
-  {
-    if (map["connection"].find("close", 0) != std::string::npos)
-      return (false);
-  }
-  return (true);
 }

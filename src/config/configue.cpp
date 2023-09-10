@@ -35,6 +35,46 @@ void ServerConfig::initErrPages()
 }
 
 
+
+// void ServerConfig::parseServerConfigLine(std::string& line)
+// {
+//     std::vector<std::string> tokens;
+//     std::stringstream ss(line);
+//     std::string token;
+
+//     while (std::getline(ss, token, ' '))
+//     {
+//         if (!token.empty())
+//             tokens.push_back(token);
+//     }
+
+//     if (tokens[0] == "host:")
+//         serverConfigs.back().host = tokens[1];
+//     else if (tokens[0] == "port:")
+//         serverConfigs.back().port = tokens[1];
+//     else if (tokens[0] == "max_body_size:")
+//         serverConfigs.back().maxBodySize = tokens[1];
+//     else if (tokens[0] == "server_name:"){
+//         for (size_t i = 1; i < tokens.size(); i++)
+//             serverConfigs.back().serverName.push_back(tokens[i]);
+//     }
+//     else if (tokens[0] == "error_page"){
+//         for (size_t i = 1; i < tokens.size(); i++)
+//         {
+//             if (tokens[i] == "400:")
+//                 serverConfigs.back().errorPage400[tokens[i]] = tokens[i + 1];
+//             else if (tokens[i] == "404:")
+//                 serverConfigs.back().errorPage404[tokens[i]] = tokens[i + 1];
+//         }
+//     }
+//     else if (tokens.size() == 3 && tokens[0] == "server_name:"){
+//         for (size_t i = 1; i < tokens.size(); i++)
+//             serverConfigs.back().serverName.push_back(tokens[i]);
+//     }
+//     else
+//         return ;
+// }
+
 void ServerConfig::parseServerConfigLine(std::string& line)
 {
     std::vector<std::string> tokens;
@@ -61,7 +101,8 @@ void ServerConfig::parseServerConfigLine(std::string& line)
         for (size_t i = 1; i < tokens.size(); i++)
             serverConfigs.back().serverName.push_back(tokens[i]);
     }
-    else if (tokens[0] == "error_page"){
+    else if (tokens[0] == "error_page")
+    {
         for (size_t i = 1; i < tokens.size() - 1; i += 2)
         {
             short errorCode;
@@ -160,19 +201,3 @@ ServerConfig::ServerConfig(std::string filename)
 
 }
 
-const std::vector<ServerConfig::LocationConfig>::iterator ServerConfig::Server::getLocationKey(std::string key)
-{
-    std::vector<LocationConfig>::iterator it;
-    for (it = locations.begin(); it != locations.end(); it++)
-    {
-        if (it->getPath() == key)
-            return it;
-    }
-    std::cerr << "Error: path to location not found[" << key << "]" << std::endl;
-    return locations.end();
-}
-
-std::string ServerConfig::LocationConfig::getPath() const
-{
-    return root;
-}

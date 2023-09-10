@@ -31,7 +31,6 @@ std::string Response::getContentType(std::string &filename)
     contentTypeMap[".avi"] = "video/x-msvideo";
     contentTypeMap[".php"] = "php";
     contentTypeMap[".py"] = "python";
-
     std::string contentType = "application/octet-stream";                // default content type is binary
     std::string extension = filename.substr(filename.find_last_of(NO9TA));
     if (contentTypeMap.count(extension) > 0)
@@ -127,8 +126,13 @@ void Response::handle_response(Network *c)
 {
     std::string method = c->request.get_met();
 
-
+    Request req = c->request;
     Response res;
+    if(c->request.is_err){
+        send_err(c->get_socket_fd(), c->request.is_err);
+        c->is_done = true;
+        return;
+    }
     if (method.empty())
         return;
     if (method == "GET")
@@ -165,8 +169,8 @@ void Response::handle_response(Network *c)
             return;
         }
     }
-    else {
-        send_err(c->get_socket_fd(), 501);
+    else if (method != "GET" || method != "DELETE" || method != "POST"){
+        send_err(c->get_socket_fd(), 400);
         c->is_done = true;
     }
 }
@@ -372,7 +376,6 @@ int Response::handle_url(Network *c, std::string url)
 {
     Response r;
     int j = 0;
-
     std::string extension = url.substr(url.find_last_of('.') + 1);
     std::string rootPath = cnf->serverConfigs[c->request.srv_index].locations[c->request.location_index].root;
     std::string cgiPath = cnf->serverConfigs[c->request.srv_index].locations[c->request.location_index].cgiPath[extension];

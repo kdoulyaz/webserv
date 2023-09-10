@@ -56,62 +56,37 @@ void Webserv::init_fdbit()
 
 void Webserv::multiplexing(Network *net, struct timeval &t)
 {
-	Response respons;
+	Response res;
 	init_fdbit();
 	if (select(maxfd_sock + WA7ED, &fdread, &fdwrite, &fderror, &t) < ZERO){
 		std::cerr << "select: " << strerror(errno) << std::endl;
 		exit(1);
 	}
 	for (int fd_sock = 3; fd_sock < maxfd_sock + WA7ED; fd_sock++){
-
-		if (i != sock_fd)
-		{
-			net = get_network(i);
-			if (!net)
-				continue;
-		}
-
+		if (fd_sock != sock_fd && !(net = get_network(fd_sock)))
+			continue;
 		if (FD_ISSET(fd_sock, &fdread))
-		{// reading data from clients when FD_ISSET(fd_sock, &fdread_copy) is true
+		{
 			if (fd_sock == sock_fd)
 				add_network();
-			else if (!net->is_read){
+			else if (net and !net->is_readed){
 				std::cout << "Receiving..." << std::endl;
 				char buff[BUFFER_SIZE];
 				int bytes = recv(net->get_socket_fd(), buff, sizeof(buff), 0);
 				if (bytes < WA7ED)
-					net->is_read = true;
-				else
+					net->is_readed = true;
+				else{
+
 					net->handle_req(buff, bytes);
-				if (net->is_read == 1)
-				{
-					// std::cout << "heeererrr" << std::endl;
-					buildResponse(*net);
-					FD_CLR(fd_sock, &fdread);
-					FD_SET(fd_sock, &fdwrite);
-				}
-			}
-			if (FD_ISSET(fd_sock, &fdwrite))
-			{
-				sendRespo(*net);
-					// std::string response = "HTTP/1.1 200 OK\r\n"
-					// 					   "Content-Type: text/plain\r\n"
-					// 					   "Content-Length: 13\r\n"
-					// 					   "\r\n"
-					// 					   "Hello, world!";
-					// send(net->get_socket_fd(), response.c_str(), response.size(), 0);
-					// FD_CLR(fd_sock, &fdread);
-					// FD_CLR(fd_sock, &fdwrite);
-			}
-			else
-			{
-				std::cout << "Deleting..." << std::endl;
-				delete_network(fd_sock);
+					
+					}
 			}
 		}
-		else if (FD_ISSET(i, &fdwrite)){
-			respons.handle_response(net);
+		else if (FD_ISSET(fd_sock, &fdwrite)){
+
+			res.handle_response(net);
+			if (net->is_done)
+				delete_network(net);	// Client disconnected
 		}
-		delete_network(net);	// Client disconnected
-	}	
+	}
 }
