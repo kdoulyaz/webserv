@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Werror -Wextra -I include -fsanitize=address -g -std=c++98
+CFLAGS = -Wall -Werror -Wextra -I include #-fsanitize=address -g -std=c++98
 CPP = c++
 SRC := $(shell find $(SRCS_DIR) -type f -name "*.cpp")
 NAME = server

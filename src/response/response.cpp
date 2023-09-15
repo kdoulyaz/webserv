@@ -31,7 +31,7 @@ std::string Response::getContentType(std::string &filename)
     contentTypeMap[".avi"] = "video/x-msvideo";
     contentTypeMap[".php"] = "php";
     contentTypeMap[".py"] = "python";
-    std::string contentType = "application/octet-stream";                // default content type is binary
+    std::string contentType = "application/octet-stream";
     std::string extension = filename.substr(filename.find_last_of(NO9TA));
     if (contentTypeMap.count(extension) > 0)
     {
@@ -59,12 +59,10 @@ void Response::send_res(Network *net, std::string key)
             return;
         }
 
-        // Get file size
         net->file.seekg(0, std::ios::end);
         net->file_size = net->file.tellg();
         net->file.seekg(0, std::ios::beg);
 
-        // Create response header
         if (key == "404:"){
             response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n";
             contentLengthHeader << "Content-Length: " << net->file_size << "\r\n\r\n";
@@ -105,7 +103,7 @@ void Response::send_res(Network *net, std::string key)
         if (bytes_read < buff_size)
         {
             if (send(net->get_socket_fd(), buffer, bytes_read, 0) == -1)
-                std::cout << "error sending response2" << std::endl;
+                std::cout << "error sending response3" << std::endl;
             net->is_done = true;
             net->file.close();
             return;
@@ -196,35 +194,28 @@ void Response::handle_delete(Network* c)
 {
     std::string location = c->request.get_loc();
     std::string response;
-    // int status_code = 0;
 
 
-    // Remove leading slash from the location if present
     if (location[0] == '/' && location.length() > 1)
         location.erase(0, 1);
 
     if (location.length() == 1 && location[0] == '/')
     {
         response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
-        // status_code = 403; // Forbidden
         send(c->get_socket_fd(), response.c_str(), response.length(), 0);
         c->is_done = true;
         return;
     }
 
-    if (access(c->_file_name.c_str(), F_OK) == -1) // File not found
+    if (access(c->_file_name.c_str(), F_OK) == -1) 
     {
-        // The file does not exist
         std::cout << "File does not exist" << std::endl;
-        // status_code = 404; // Not Found
         response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
     }
     else
     {
-        // Check write permission on the file
         if (access(c->_file_name.c_str(), W_OK) == -1)
         {
-            // status_code = 403; // Forbidden
             response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
             send(c->get_socket_fd(), response.c_str(), response.length(), 0);
             c->is_done = true;
@@ -234,17 +225,14 @@ void Response::handle_delete(Network* c)
         if (remove(c->_file_name.c_str()) != 0)
         {
             std::cout << "Error occurred while deleting the file" << std::endl;
-            // status_code = 500; // Internal Server Error
             response = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
         }
         else
         {
-            // status_code = 204; // No Content
             response = "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n";
         }
     }
 
-    // Send the response
     send(c->get_socket_fd(), response.c_str(), response.length(), 0);
     c->is_done = true;
     return;
@@ -258,10 +246,9 @@ int Response::is_request_in_location(Network *c)
     {
         int index = check_which_server(c);
         if (index == -1)
-            index = 0; // default server
+            index = 0;
         for (size_t j = 0; j < cnf->serverConfigs[index].locations.size(); j++)
         {
-            // match location
             l =  res.loc_matched(c->request.get_loc(), index, c);
             if (l == -1)
             {
@@ -274,7 +261,6 @@ int Response::is_request_in_location(Network *c)
                 c->request.location_index = l;
                 if (cnf->serverConfigs[index].locations[l].return_ != "")
                 {
-                    // send_response_return(c->get_socket_fd(), config->servers[index].locations[l].return_);
                     c->is_done = true;
                     return 1;
                 }
@@ -284,7 +270,7 @@ int Response::is_request_in_location(Network *c)
                     c->is_done = true;
                     return 0;
                 }
-                if (is_valid_file(c, index, l) == 1) // if file is valid
+                if (is_valid_file(c, index, l) == 1)
                 {
                     if (if_location_has_cgi(index, l) == 1 && access(c->_file_name.c_str(), F_OK) != -1)
                     {
@@ -348,7 +334,7 @@ int is_valid_file(Network *c, int i, int j)
             }
         }
         else{
-            if (access((c->url).c_str(), F_OK) != -1) // is file
+            if (access((c->url).c_str(), F_OK) != -1)
             {
                 c->_file_name = c->url;
                 return (1);
@@ -433,9 +419,8 @@ int auto_index(Network *c, int index, int l)
     Response r;
     if (cnf->serverConfigs[index].locations[l].autoindex == "on")
     {
-        // list all of content of directory and send it to client
         int j = 0;
-        std::string dir = cnf->serverConfigs[index].locations[l].root; // root
+        std::string dir = cnf->serverConfigs[index].locations[l].root;
         std::string url = cnf->serverConfigs[index].locations[l].root + c->save_delete;
         url = cnf->serverConfigs[index].locations[l].location_Config[j];;
         if (url == WALO)
@@ -470,7 +455,6 @@ void    is_config_empty(Network *c, int i, int j)
 
 void Response::send_response_autoindex(int fd, std::string &url, std::string &root, Network *c)
 {
-    // Send the autoindex page with the clickable content of the root
     Response r;
     std::string response;
     std::string content;
@@ -518,14 +502,12 @@ void Response::send_response_autoindex(int fd, std::string &url, std::string &ro
 }
 
 void send_http_response(Network *c, std::string& filepath) {
-    // Open the file
     std::ifstream file(filepath.c_str());
     if (!file.is_open()) {
         std::cerr << "Error: could not open file " << filepath << std::endl;
         return;
     }
 
-    // Read the file into a string
     std::string body;
     std::string line;
     while (std::getline(file, line)) {
@@ -567,17 +549,14 @@ void handle_get(Network *c, char *args[3])
     }
     else if (pid > 0)
     {
-        // This is the parent process
         int status;
 
         if (waitpid(pid, &status, WNOHANG) == 0)
         {
-            // Child process is still running
             sleep(1);
 
             if (waitpid(pid, &status, WNOHANG) == 0)
             {
-                // Child process did not complete within the timeout
                 kill(pid, SIGKILL);
                 lseek(fd, 0, SEEK_END);
                 const char *timeoutMessage = "This request took too long time.\n";

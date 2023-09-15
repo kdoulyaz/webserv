@@ -75,18 +75,15 @@ void Webserv::multiplexing(Network *net, struct timeval &t)
 				int bytes = recv(net->get_socket_fd(), buff, sizeof(buff), 0);
 				if (bytes < WA7ED)
 					net->is_readed = true;
-				else{
-
+				else
 					net->handle_req(buff, bytes);
-					
-					}
 			}
 		}
 		else if (FD_ISSET(fd_sock, &fdwrite)){
 
 			res.handle_response(net);
 			if (net->is_done)
-				delete_network(net);	// Client disconnected
+				delete_network(net);
 		}
 	}
 }

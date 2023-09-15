@@ -130,15 +130,14 @@ void Response::send_err(int c_socket, int code)
     response_map[413] = "HTTP/1.1 413 Pyload too large\r\nContent-Type: text/html\r\nContent-Length: 20\r\n\r\n413 Pyload too large";
 
     std::map<int, std::string>::iterator it = response_map.find(code);
-    if (it == response_map.end()) // if the code is not in the map
+    if (it == response_map.end())
     {
         std::cout << "Error code not valid" << code << std::endl;
         return;
     }
 
-    std::string response = it->second; // get the response from the map using the code as key
+    std::string response = it->second;
     send(c_socket, response.c_str(), response.length(), 0);
-  //  std::cout << "tessst __________________" << std::endl;
 }
 
 int Response::is_allowed_method(std::string method, std::vector<std::string> &methods)
@@ -162,12 +161,12 @@ void Response::send_Get_response(std::string key, Network *c)
             return;
         }
 
-        // Get file size
+
         c->file.seekg(0, std::ios::end);
         c->file_size = c->file.tellg();
         c->file.seekg(0, std::ios::beg);
 
-        // Create response header
+
         std::string response;
         if (key == "404:"){
             response = "HTTP/1.1 404 Not Found\r\n";
@@ -212,10 +211,13 @@ void Response::send_Get_response(std::string key, Network *c)
 
         if (bytes_read < buff_size)
         {
+            std::cout << "buff_size:" << buff_size << std::endl;
             if (send(c->get_socket_fd(), buffer, bytes_read, 0) == -1)
-                std::cout << "error sending response2" << std::endl;
+            {
+                c->file.close();
+                std::cout << "error sendi4ng response2" << std::endl;
+            }
             c->is_done = true;
-            c->file.close();
             return;
         }
 
@@ -225,7 +227,6 @@ void Response::send_Get_response(std::string key, Network *c)
             c->file.close();
             return;
         }
-
         c->file_size -= bytes_read;
     }
 }
@@ -283,28 +284,22 @@ int Response::Handle_cgi_response(Network *c, std::string url)
         pid_t pid = fork();
         if (pid == 0)
         {
-            // This is the child process
             dup2(fd2, 1);
             if (execve(args[0], args, env) == -1)
             {
                 std::cout << "error in execve" << std::endl;
-                for (int i = 0; i < 2; i++){
+                for (int i = 0; i < 2; i++)
                     free(args[i]);
-                }
                 exit(EXIT_FAILURE);
             }
         }
         else if (pid > 0)
         {
-            // This is the parent process
             sleep(5);
             int status;
             pid_t result = waitpid(pid, &status, WNOHANG);
             if (result == 0)
-            {
-                // Child process is still running
                 kill(pid, SIGKILL);
-            }
             close(fd2);
         }
         else
@@ -334,11 +329,10 @@ int Response::Handle_cgi_response(Network *c, std::string url)
 
 int Response::is_dir(std::string location)
 {
-    // check if file open if yes is directory or not
-    if (open(location.c_str(), O_DIRECTORY) != -1) // O_DIRECTORY is a flag for directories not being opened properly for reading and writing
-        return (1);
-    else
+    if (open(location.c_str(), O_DIRECTORY) == -1)
         return (0);
+    else
+        return (1);
 }
 
 
@@ -346,7 +340,6 @@ int Response::post_err(Network *c)
 {
     Response r;
     std::string ex;
-
     int index = check_which_server(c);
     if (index == -1)
         index = 0;
@@ -362,19 +355,15 @@ int Response::post_err(Network *c)
     ex = c->request.get_loc().substr(c->request.get_loc().find_last_of(".") + 1);
     if (cnf->serverConfigs[index].locations[l].uploadPath.empty())
     {
-        r.send_Get_response("404:", c);
-        c->is_done = true;
-        return 0;
-    }
-    if (r.is_dir(cnf->serverConfigs[index].locations[l].uploadPath) == 0)
-    {
-        r.send_Get_response("404:", c);
-        c->is_done = true;
-        return 0;
+        std::cout<< c->_cgi_path << "    nooormal\n";
+
+        // r.send_Get_response("404:", c);
+        // c->is_done = true;
+        // return 0;
     }
     if (r.is_allowed_method(c->request.get_met(), cnf->serverConfigs[index].locations[l].methods) == 0)
     {
-        r.send_err(c->get_socket_fd(), 405); // not allowed
+        r.send_err(c->get_socket_fd(), 405);
         c->is_done = true;
         return 0;
     }
@@ -431,7 +420,9 @@ void Network::handle_req(const char *req_body, size_t size)
     else
         body = WALO;
     request.handle_headers(str_header);
+    std::cout << "header is: " << str_header << "\nend of header." << std::endl;
     url = request.get_loc();
+    std::cout << "url is:" << url << std::endl;
     ext = url.substr(url.find_last_of(NO9TA) + WA7ED);
     if (request.get_met() == "POST" and handle_post(this) and cnf->serverConfigs[request.srv_index].locations[request.location_index].cgiPath[ext].empty())
     {

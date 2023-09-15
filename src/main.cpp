@@ -2,7 +2,9 @@
 #include "../include/webserv.hpp"
 
 ServerConfig *cnf;
-
+void  sig_pipe_handler(int sig){
+  if (sig){}
+}
 int main(int argc, char **argv)
 {
   if (argc == 2)
@@ -30,6 +32,7 @@ int main(int argc, char **argv)
     while(1337) {
       for(size_t i = 0; i < servers.size(); i++)
         servers[i]->multiplexing(net, t);
+      signal(SIGPIPE, sig_pipe_handler);
     }
     for(size_t i = 0; i < cnf->serverConfigs.size(); i++)
     {
